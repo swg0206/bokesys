@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<!--
+  前台页脚，对应《概要设计》6.1.1 底部区：
+  左侧为分页组件，右侧为版权与备案信息（备案号取自 t_config，对应 Fun_14）。
+-->
+<footer class="site-footer" th:fragment="footer(page, base)">
+    <div th:replace="~{front/fragments/pagination :: pagination(${page}, ${base})}"></div>
+
+    <div class="inner">
+        <span>
+            © 2026
+            <span th:text="${site != null ? (site['author_name'] ?: '第19组') : '第19组'}">第19组</span>
+            ·
+            <span th:text="${site != null ? (site['site_name'] ?: '博客系统') : '博客系统'}">博客系统</span>
+        </span>
+        <span>
+            基于 Spring Boot + MyBatis + Thymeleaf 构建
+            <span th:if="${site != null and site['icp_no'] != null and site['icp_no'] != ''}">
+                 · <span th:text="${site['icp_no']}">备案号</span>
+            </span>
+        </span>
+    </div>
+</footer>
+</html>

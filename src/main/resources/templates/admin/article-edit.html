@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<!--
+  文章编辑器，新建与编辑共用，对应《概要设计》4.2.3 的输入项：
+  标题、摘要、正文、封面图、所属分类、标签集合、保存动作（草稿 / 发布）。
+
+  「发布」与「存草稿」走不同端点（新建时）或同一端点带 action 参数（编辑时），
+  因此在点击按钮时先改写 form 的 action 与 data-ajax，再交给 admin.js 统一提交。
+  「返回列表」保留原筛选条件由浏览器历史负责（返回即回到列表页）。
+-->
+<head th:replace="~{admin/fragments/head :: head(${pageTitle})}">
+    <title>文章编辑器</title>
+</head>
+<body>
+
+<div class="admin-layout">
+    <div th:replace="~{admin/fragments/sidebar :: sidebar(${activeMenu})}"></div>
+
+    <div class="admin-main">
+        <div th:replace="~{admin/fragments/topbar :: topbar(${pageTitle})}"></div>
+
+        <div class="admin-content">
+
+            <div class="page-head">
+                <h1 th:text="${pageTitle}">发布文章</h1>
+                <span class="spacer"></span>
+                <a class="btn btn-outline" th:href="@{/admin/articles}">← 返回列表</a>
+            </div>
+
+            <form id="articleForm"
+                  method="post"
+                  th:action="${article != null}
+                             ? @{/admin/articles/{id}(id=${article.id})}
+                             : @{/admin/articles}"
+                  th:data-ajax="${article != null} ? 'put' : 'post'"
+                  th:data-edit="${article != null}"
+                  th:data-id="${article != null} ? ${article.id} : ''"
+                  data-redirect="/admin/articles">
+
+                <div class="card">
+                    <div class="form-group">
+                        <label class="required" for="titleInput">文章标题</label>
+                        <input type="text" id="titleInput" name="title" required
+                               maxlength="200" th:value="${article != null} ? ${article.title} : ''"
+                               placeholder="请输入文章标题">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="required" for="categorySelect">所属分类</label>
+                            <select id="categorySelect" name="categoryId" required>
+                                <option value="">请选择分类</option>
+                                <option th:each="c : ${categories}"
+                                        th:value="${c.id}"
+                                        th:text="${c.name}"
+                                        th:selected="${article != null
+                                                      and article.categoryId != null
+                                                      and article.categoryId == c.id}">分类</option>
+                            </select>
+                            <div class="help">
+                                没有合适的分类？<a th:href="@{/admin/categories}">去分类管理新建</a>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>状态</label>
+                            <div style="padding-top:8px">
+                                <span class="badge-status badge-published"
+                                      th:if="${article != null and article.published}">当前：已发布</span>
+                                <span class="badge-status badge-draft"
+                                      th:if="${article != null and !article.published}">当前：草稿</span>
+                                <span class="badge-status badge-draft"
+                                      th:if="${article == null}">新建文章</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="summaryInput">文章摘要</label>
+                        <input type="text" id="summaryInput" name="summary" maxlength="500"
+                               th:value="${article != null} ? ${article.summary} : ''"
+                               placeholder="留空将自动从正文截取一段">
+                    </div>
+
+                    <div class="form-group">
+                        <label>标签</label>
+                        <div class="checkbox-grid" th:if="${allTags != null and !#lists.isEmpty(allTags)}">
+                            <label th:each="t : ${allTags}">
+                                <input type="checkbox" name="tagIds" th:value="${t.id}"
+                                       th:checked="${article != null
+                                                    and article.tags != null
+                                                    and #lists.contains(article.tags.![id], t.id)}">
+                                <span th:text="${t.name}">标签</span>
+                            </label>
+                        </div>
+                        <div class="help" th:if="${allTags == null or #lists.isEmpty(allTags)}">
+                            还没有标签，<a th:href="@{/admin/tags}">去标签管理新建</a>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="coverFileInput">封面图</label>
+                        <input type="hidden" id="coverImageInput" name="coverImage"
+                               th:value="${article != null} ? ${article.coverImage} : ''">
+                        <input type="file" id="coverFileInput" accept="image/*">
+                        <div class="help">支持 jpg / png / gif / webp，单张不超过 5MB</div>
+                        <img id="coverPreview"
+                             th:if="${article != null and article.coverImage != null
+                                      and article.coverImage != ''}"
+                             th:src="${article.coverImage}" alt="封面预览"
+                             style="margin-top:10px;max-width:280px;border-radius:8px">
+                        <img id="coverPreview" th:unless="${article != null and article.coverImage != null
+                                                          and article.coverImage != ''}"
+                             alt="" style="margin-top:10px;max-width:280px;border-radius:8px;display:none">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="required" for="contentInput">正文内容</label>
+                        <textarea id="contentInput" name="content" required
+                                  placeholder="支持 Markdown 源文，展示时保留换行"
+                                  th:text="${article != null} ? ${article.content} : ''"></textarea>
+                        <div class="help">
+                            <span id="contentCounter">0 字符</span>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn"
+                                onclick="prepareSubmit('publish')"
+                                th:text="${article != null} ? '保存并更新' : '发布文章'">发布文章</button>
+                        <button type="submit" class="btn btn-outline"
+                                onclick="prepareSubmit('draft')">存草稿</button>
+                        <span class="spacer"></span>
+                        <span class="text-sub">提交后会自动返回列表页</span>
+                    </div>
+                </div>
+            </form>
+
+        </div>
+    </div>
+</div>
+
+<script th:src="@{/js/admin.js}"></script>
+<script>
+    /**
+     * 在提交前改写表单的目标地址与 HTTP 方法。
+     *
+     * 新建：「发布文章」打 POST /admin/articles，「存草稿」打 POST /admin/articles/draft；
+     * 编辑：两者都打 PUT /admin/articles/{id}，草稿额外带 action=draft，
+     *       由 BlogController 决定最终落库的状态。
+     */
+    function prepareSubmit(mode) {
+        var form = document.getElementById('articleForm');
+        var isEdit = form.getAttribute('data-edit') === 'true';
+        var id = form.getAttribute('data-id');
+
+        if (isEdit) {
+            form.setAttribute('data-ajax', 'put');
+            form.setAttribute('action',
+                '/admin/articles/' + id + (mode === 'draft' ? '?action=draft' : ''));
+        } else {
+            form.setAttribute('data-ajax', 'post');
+            form.setAttribute('action',
+                mode === 'draft' ? '/admin/articles/draft' : '/admin/articles');
+        }
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<!--
+  分类文章列表，对应接口 API-04（Fun_03 分类导航）。
+-->
+<head th:replace="~{front/fragments/head :: head(${pageTitle})}">
+    <title>分类</title>
+</head>
+<body>
+
+<header th:replace="~{front/fragments/header :: header(${activeNav})}"></header>
+
+<div class="page-wrap">
+    <div class="grid-main">
+        <main>
+            <div style="background:#fff;border:1px solid var(--border);border-radius:var(--radius);
+                        padding:16px 20px;margin-bottom:18px">
+                <h2 style="margin:0 0 4px;font-size:18px">
+                    分类：<span th:text="${category.name}">分类名</span>
+                </h2>
+                <p style="margin:0;color:var(--text-sub);font-size:13.5px"
+                   th:text="${category.description != null and category.description != ''}
+                            ? ${category.description} : '该分类暂无描述'">描述</p>
+                <p style="margin:6px 0 0;color:var(--text-sub);font-size:13px">
+                    共 <span th:text="${page != null ? page.total : 0}">0</span> 篇文章
+                </p>
+            </div>
+
+            <div th:if="${page != null and !page.empty}">
+                <th:block th:each="article : ${page.list}">
+                    <article th:replace="~{front/fragments/article-card :: card(${article})}"></article>
+                </th:block>
+            </div>
+
+            <div class="empty-state" th:if="${page == null or page.empty}">
+                该分类下还没有已发布的文章
+            </div>
+        </main>
+
+        <div th:replace="~{front/fragments/sidebar :: sidebar}"></div>
+    </div>
+</div>
+
+<footer th:replace="~{front/fragments/footer :: footer(${page}, ${pageBase})}"></footer>
+
+<button class="back-to-top" type="button" aria-label="回到顶部">↑</button>
+<script th:src="@{/js/main.js}"></script>
+</body>
+</html>

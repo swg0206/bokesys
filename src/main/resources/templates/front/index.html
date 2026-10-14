@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<!--
+  前台首页，对应《概要设计》6.1.1 与接口 API-01。
+  三段式布局：顶部 sticky 导航 / 中部 CSS Grid 1fr 300px 双栏 / 底部分页与版权。
+  数据由 IndexController 提供：page 为已发布文章的分页结果。
+-->
+<head th:replace="~{front/fragments/head :: head(${pageTitle})}">
+    <title>首页</title>
+</head>
+<body>
+
+<header th:replace="~{front/fragments/header :: header(${activeNav})}"></header>
+
+<div class="page-wrap">
+    <div class="grid-main">
+
+        <!-- 左栏：文章列表 -->
+        <main>
+            <div th:if="${page != null and !page.empty}">
+                <!-- 用 th:block 承载循环，避免 th:each 与 th:replace 写在同一元素上
+                     时因属性优先级产生歧义 -->
+                <th:block th:each="article : ${page.list}">
+                    <article th:replace="~{front/fragments/article-card :: card(${article})}"></article>
+                </th:block>
+            </div>
+
+            <div class="empty-state" th:if="${page == null or page.empty}">
+                <p style="margin:0 0 6px;font-size:16px">还没有已发布的文章</p>
+                <p style="margin:0;font-size:13.5px">登录后台即可发布第一篇博客</p>
+            </div>
+        </main>
+
+        <!-- 右栏：功能侧边栏 -->
+        <div th:replace="~{front/fragments/sidebar :: sidebar}"></div>
+
+    </div>
+</div>
+
+<footer th:replace="~{front/fragments/footer :: footer(${page}, ${pageBase})}"></footer>
+
+<button class="back-to-top" type="button" aria-label="回到顶部">↑</button>
+<script th:src="@{/js/main.js}"></script>
+</body>
+</html>

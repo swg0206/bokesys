@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.swust.bokesys.mapper.AdminMapper">
+
+    <!-- 登录校验用，必须带出 password 密文交给 PasswordUtil 比对 -->
+    <select id="selectByUsername" resultType="cn.swust.bokesys.po.Admin">
+        SELECT id, username, password, nickname, avatar, email,
+               last_login_time, create_time, update_time
+        FROM t_admin
+        WHERE username = #{username}
+    </select>
+
+    <select id="selectById" resultType="cn.swust.bokesys.po.Admin">
+        SELECT id, username, password, nickname, avatar, email,
+               last_login_time, create_time, update_time
+        FROM t_admin
+        WHERE id = #{id}
+    </select>
+
+    <insert id="insert" parameterType="cn.swust.bokesys.po.Admin"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO t_admin
+            (username, password, nickname, avatar, email, last_login_time, create_time, update_time)
+        VALUES
+            (#{username}, #{password}, #{nickname}, #{avatar}, #{email},
+             #{lastLoginTime}, #{createTime}, #{updateTime})
+    </insert>
+
+    <update id="updateLastLoginTime">
+        UPDATE t_admin SET last_login_time = #{lastLoginTime} WHERE id = #{id}
+    </update>
+
+    <update id="updateProfile" parameterType="cn.swust.bokesys.po.Admin">
+        UPDATE t_admin
+        <set>
+            <if test="nickname != null">nickname = #{nickname},</if>
+            <if test="avatar != null">avatar = #{avatar},</if>
+            <if test="email != null">email = #{email},</if>
+            update_time = CURRENT_TIMESTAMP
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <update id="updatePassword">
+        UPDATE t_admin
+        SET password = #{password}, update_time = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <select id="countAll" resultType="long">
+        SELECT COUNT(*) FROM t_admin
+    </select>
+
+</mapper>

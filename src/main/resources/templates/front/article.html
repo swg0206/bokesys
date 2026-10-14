@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<!--
+  文章详情页，对应《概要设计》6.2.1 与接口 API-02（Fun_01 / Fun_05）。
+  自上而下：面包屑 → 标题 → 元信息条 → 封面 → 正文 → 标签 → 上一篇/下一篇 → 评论区。
+
+  正文用 th:text 而不是 th:utext 渲染（避免 XSS），换行交给 CSS 的 white-space: pre-wrap。
+-->
+<head th:replace="~{front/fragments/head :: head(${pageTitle})}">
+    <title>文章详情</title>
+</head>
+<body>
+
+<header th:replace="~{front/fragments/header :: header(${activeNav})}"></header>
+
+<div class="page-wrap">
+    <div class="grid-main">
+        <main>
+            <article class="article-detail">
+                <!-- 面包屑 -->
+                <nav class="breadcrumb">
+                    <a th:href="@{/}">首页</a> /
+                    <a th:href="@{/category/{id}(id=${article.categoryId})}"
+                       th:text="${article.categoryName}">分类</a> /
+                    <span th:text="${article.title}">文章标题</span>
+                </nav>
+
+                <h1 th:text="${article.title}">文章标题</h1>
+
+                <div class="article-meta">
+                    <span>分类：<a th:href="@{/category/{id}(id=${article.categoryId})}"
+                                  th:text="${article.categoryName}">分类</a></span>
+                    <span th:text="${#temporals.format(article.createTime, 'yyyy-MM-dd HH:mm')}">发布时间</span>
+                    <span>浏览 <span th:text="${article.viewCount}">0</span></span>
+                    <span>评论 <span th:text="${article.commentCount}">0</span></span>
+                </div>
+
+                <img class="cover" th:if="${article.coverImage != null and article.coverImage != ''}"
+                     th:src="${article.coverImage}" th:alt="${article.title}"
+                     style="width:100%;border-radius:10px;margin-bottom:20px">
+
+                <div class="article-content" th:text="${article.content}">正文内容</div>
+
+                <!-- 文末标签云 -->
+                <div class="tag-list" style="margin-top:26px"
+                     th:if="${article.tags != null and !#lists.isEmpty(article.tags)}">
+                    <a class="tag" th:each="t : ${article.tags}"
+                       th:href="@{/tag/{id}(id=${t.id})}" th:text="${t.name}">标签</a>
+                </div>
+
+                <!-- 上一篇 / 下一篇 -->
+                <div class="article-nav"
+                     th:if="${prevArticle != null or nextArticle != null}">
+                    <a th:if="${prevArticle != null}"
+                       th:href="@{/article/{id}(id=${prevArticle.id})}">
+                        ← 上一篇：<span th:text="${prevArticle.title}">标题</span>
+                    </a>
+                    <span th:unless="${prevArticle != null}"></span>
+
+                    <a th:if="${nextArticle != null}"
+                       th:href="@{/article/{id}(id=${nextArticle.id})}">
+                        下一篇：<span th:text="${nextArticle.title}">标题</span> →
+                    </a>
+                </div>
+            </article>
+
+            <!-- 评论区 -->
+            <section class="comment-section">
+                <h3>评论（<span th:text="${commentTotal}">0</span>）</h3>
+
+                <!-- 未登录只能看，不能发 -->
+                <div class="alert alert-info" th:if="${session.loginUser == null}">
+                    游客仅可浏览已审核的评论，<a th:href="@{/user/login(redirect=${'/article/' + article.id})}">登录</a>
+                    后即可参与评论。
+                </div>
+
+                <!-- 登录后可发表评论；提交后进入待审核状态 -->
+                <form class="comment-form" th:if="${session.loginUser != null}"
+                      th:attr="data-article-id=${article.id}" onsubmit="return false;">
+                    <input type="hidden" name="parentId" value="">
+                    <textarea name="content" maxlength="500"
+                              placeholder="说点什么吧…（提交后需管理员审核通过才会展示）"></textarea>
+                    <div class="actions">
+                        <button class="btn" type="submit">发表评论</button>
+                        <span class="comment-tip">评论提交后为待审核状态</span>
+                    </div>
+                </form>
+
+                <!-- 评论楼 -->
+                <div th:if="${comments != null and !#lists.isEmpty(comments)}"
+                     style="margin-top:22px">
+                    <div th:replace="~{front/fragments/comment-tree :: tree(${comments})}"></div>
+                </div>
+                <div class="empty-state" style="margin-top:18px;padding:30px 20px"
+                     th:if="${comments == null or #lists.isEmpty(comments)}">
+                    还没有评论，来抢沙发吧
+                </div>
+            </section>
+        </main>
+
+        <div th:replace="~{front/fragments/sidebar :: sidebar}"></div>
+    </div>
+</div>
+
+<footer th:replace="~{front/fragments/footer :: footer(${null}, '/')}"></footer>
+
+<button class="back-to-top" type="button" aria-label="回到顶部">↑</button>
+<script th:src="@{/js/main.js}"></script>
+</body>
+</html>

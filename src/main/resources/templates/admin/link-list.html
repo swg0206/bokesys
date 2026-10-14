@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<!--
+  友情链接管理，对应接口 API-20（Fun_13）。
+  列表展示名称、地址、排序号与显示状态；修改后前台侧边栏的友链区块随之变化。
+-->
+<head th:replace="~{admin/fragments/head :: head('友情链接')}">
+    <title>友情链接</title>
+</head>
+<body>
+
+<div class="admin-layout">
+    <div th:replace="~{admin/fragments/sidebar :: sidebar(${activeMenu})}"></div>
+
+    <div class="admin-main">
+        <div th:replace="~{admin/fragments/topbar :: topbar('友情链接')}"></div>
+
+        <div class="admin-content">
+
+            <div class="page-head">
+                <h1>友情链接</h1>
+                <span class="spacer"></span>
+                <span class="text-sub">共 <span th:text="${#lists.size(links)}">0</span> 条</span>
+            </div>
+
+            <div class="two-col">
+                <!-- 友链列表 -->
+                <div class="table-wrap">
+                    <table class="data-table">
+                        <thead>
+                        <tr>
+                            <th style="width:56px">ID</th>
+                            <th>链接名称</th>
+                            <th>链接地址</th>
+                            <th style="width:78px">排序号</th>
+                            <th style="width:88px">状态</th>
+                            <th style="width:132px">操作</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="l : ${links}">
+                            <td class="text-sub" th:text="${l.id}">1</td>
+                            <td th:text="${l.name}">名称</td>
+                            <td class="text-sub" style="max-width:220px;word-break:break-all">
+                                <a th:href="${l.url}" target="_blank" rel="noopener noreferrer"
+                                   th:text="${l.url}">地址</a>
+                            </td>
+                            <td th:text="${l.sortOrder}">0</td>
+                            <td>
+                                <span class="badge-status badge-published" th:if="${l.status == 1}">显示</span>
+                                <span class="badge-status badge-draft" th:unless="${l.status == 1}">隐藏</span>
+                            </td>
+                            <td class="actions">
+                                <button type="button" class="btn btn-outline btn-sm"
+                                        th:attr="data-id=${l.id},
+                                                 data-name=${l.name},
+                                                 data-url=${l.url},
+                                                 data-sort=${l.sortOrder},
+                                                 data-status=${l.status}"
+                                        onclick="startEdit(this)">编辑</button>
+                                <button type="button" class="btn btn-danger btn-sm"
+                                        data-row-action
+                                        th:attr="data-url=@{/admin/links/{id}(id=${l.id})}"
+                                        data-method="DELETE"
+                                        data-confirm-title="删除友链"
+                                        th:data-confirm="${'确定删除友链「' + l.name + '」吗？'}">
+                                    删除
+                                </button>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(links)}">
+                            <td colspan="6" class="empty-state">还没有友情链接</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- 新增 / 编辑表单 -->
+                <div class="card">
+                    <h2 id="formTitle">新增友链</h2>
+                    <form id="linkForm" method="post"
+                          th:action="@{/admin/links}" data-ajax="post">
+                        <input type="hidden" name="id" id="linkId" value="">
+
+                        <div class="form-group">
+                            <label class="required" for="linkName">链接名称</label>
+                            <input type="text" id="linkName" name="name" required maxlength="50"
+                                   placeholder="例如：Spring 官方文档">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="required" for="linkUrl">链接地址</label>
+                            <input type="url" id="linkUrl" name="url" required maxlength="255"
+                                   placeholder="https://example.com">
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="linkSort">排序号</label>
+                                <input type="number" id="linkSort" name="sortOrder" value="0"
+                                       min="0" max="999">
+                            </div>
+                            <div class="form-group">
+                                <label for="linkStatus">状态</label>
+                                <select id="linkStatus" name="status">
+                                    <option value="1">显示</option>
+                                    <option value="0">隐藏</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn" id="submitBtn">新增友链</button>
+                            <button type="button" class="btn btn-outline" id="cancelBtn"
+                                    style="display:none" onclick="cancelEdit()">取消编辑</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script th:src="@{/js/admin.js}"></script>
+<script>
+    function startEdit(btn) {
+        document.getElementById('linkId').value = btn.dataset.id;
+        document.getElementById('linkName').value = btn.dataset.name;
+        document.getElementById('linkUrl').value = btn.dataset.url;
+        document.getElementById('linkSort').value = btn.dataset.sort;
+        document.getElementById('linkStatus').value = btn.dataset.status;
+
+        var form = document.getElementById('linkForm');
+        form.setAttribute('action', '/admin/links/' + btn.dataset.id);
+        form.setAttribute('data-ajax', 'put');
+
+        document.getElementById('formTitle').textContent = '编辑友链：' + btn.dataset.name;
+        document.getElementById('submitBtn').textContent = '保存修改';
+        document.getElementById('cancelBtn').style.display = 'inline-block';
+        document.getElementById('linkName').focus();
+    }
+
+    function cancelEdit() {
+        var form = document.getElementById('linkForm');
+        form.reset();
+        form.setAttribute('action', '/admin/links');
+        form.setAttribute('data-ajax', 'post');
+        document.getElementById('linkId').value = '';
+        document.getElementById('formTitle').textContent = '新增友链';
+        document.getElementById('submitBtn').textContent = '新增友链';
+        document.getElementById('cancelBtn').style.display = 'none';
+    }
+</script>
+</body>
+</html>

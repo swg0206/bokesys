@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<!--
+  标签管理，对应接口 API-19（Fun_12）。
+  展示标签名称与其被引用的文章数量；删除标签会连带清理文章标签关联。
+  新增与编辑复用同一个表单，交互同分类管理。
+-->
+<head th:replace="~{admin/fragments/head :: head('标签管理')}">
+    <title>标签管理</title>
+</head>
+<body>
+
+<div class="admin-layout">
+    <div th:replace="~{admin/fragments/sidebar :: sidebar(${activeMenu})}"></div>
+
+    <div class="admin-main">
+        <div th:replace="~{admin/fragments/topbar :: topbar('标签管理')}"></div>
+
+        <div class="admin-content">
+
+            <div class="page-head">
+                <h1>标签管理</h1>
+                <span class="spacer"></span>
+                <span class="text-sub">共 <span th:text="${#lists.size(tags)}">0</span> 个标签</span>
+            </div>
+
+            <div class="two-col">
+                <!-- 标签列表 -->
+                <div class="table-wrap">
+                    <table class="data-table">
+                        <thead>
+                        <tr>
+                            <th style="width:56px">ID</th>
+                            <th>标签名称</th>
+                            <th style="width:110px">关联文章数</th>
+                            <th style="width:150px">创建时间</th>
+                            <th style="width:132px">操作</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="t : ${tags}">
+                            <td class="text-sub" th:text="${t.id}">1</td>
+                            <td>
+                                <span class="badge-status badge-published"
+                                      th:text="${t.name}">标签</span>
+                            </td>
+                            <td>
+                                <a th:href="@{/tag/{id}(id=${t.id})}" target="_blank"
+                                   th:text="${t.articleCount} + ' 篇'">0 篇</a>
+                            </td>
+                            <td class="text-sub"
+                                th:text="${#temporals.format(t.createTime, 'yyyy-MM-dd')}">日期</td>
+                            <td class="actions">
+                                <button type="button" class="btn btn-outline btn-sm"
+                                        th:attr="data-id=${t.id}, data-name=${t.name}"
+                                        onclick="startEdit(this)">编辑</button>
+                                <button type="button" class="btn btn-danger btn-sm"
+                                        data-row-action
+                                        th:attr="data-url=@{/admin/tags/{id}(id=${t.id})}"
+                                        data-method="DELETE"
+                                        data-confirm-title="删除标签"
+                                        th:data-confirm="${'确定删除标签「' + t.name + '」吗？该标签与文章的关联也会一并解除。'}">
+                                    删除
+                                </button>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(tags)}">
+                            <td colspan="5" class="empty-state">还没有标签</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- 新增 / 编辑表单 -->
+                <div class="card">
+                    <h2 id="formTitle">新增标签</h2>
+                    <form id="tagForm" method="post"
+                          th:action="@{/admin/tags}" data-ajax="post">
+                        <input type="hidden" name="id" id="tagId" value="">
+
+                        <div class="form-group">
+                            <label class="required" for="tagName">标签名称</label>
+                            <input type="text" id="tagName" name="name" required maxlength="50"
+                                   placeholder="例如：Spring Boot">
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn" id="submitBtn">新增标签</button>
+                            <button type="button" class="btn btn-outline" id="cancelBtn"
+                                    style="display:none" onclick="cancelEdit()">取消编辑</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script th:src="@{/js/admin.js}"></script>
+<script>
+    function startEdit(btn) {
+        document.getElementById('tagId').value = btn.dataset.id;
+        document.getElementById('tagName').value = btn.dataset.name;
+
+        var form = document.getElementById('tagForm');
+        form.setAttribute('action', '/admin/tags/' + btn.dataset.id);
+        form.setAttribute('data-ajax', 'put');
+
+        document.getElementById('formTitle').textContent = '编辑标签：' + btn.dataset.name;
+        document.getElementById('submitBtn').textContent = '保存修改';
+        document.getElementById('cancelBtn').style.display = 'inline-block';
+        document.getElementById('tagName').focus();
+    }
+
+    function cancelEdit() {
+        var form = document.getElementById('tagForm');
+        form.reset();
+        form.setAttribute('action', '/admin/tags');
+        form.setAttribute('data-ajax', 'post');
+        document.getElementById('tagId').value = '';
+        document.getElementById('formTitle').textContent = '新增标签';
+        document.getElementById('submitBtn').textContent = '新增标签';
+        document.getElementById('cancelBtn').style.display = 'none';
+    }
+</script>
+</body>
+</html>

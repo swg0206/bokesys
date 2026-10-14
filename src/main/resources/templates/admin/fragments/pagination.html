@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<!--
+  后台分页组件。
+  参数 base 是「不含 pageNo 的链接前缀」，由各列表控制器拼好传入，
+  这样分页组件不必关心当前页带了哪些筛选条件。
+-->
+<div class="pagination" th:fragment="pagination(page, base)"
+     th:if="${page != null and page.total > 0}">
+
+    <a th:if="${page.hasPrevious}" th:href="${base} + 'pageNo=' + (page.pageNo - 1)">上一页</a>
+    <span th:unless="${page.hasPrevious}" class="disabled">上一页</span>
+
+    <th:block th:with="start=${page.pageNo - 2 > 0 ? (page.pageNo + 2 <= page.pages ? page.pageNo - 2 : (page.pages - 4 > 0 ? page.pages - 4 : 1)) : 1},
+                       end=${page.pageNo + 2 <= page.pages ? (page.pageNo - 2 > 0 ? page.pageNo + 2 : (5 <= page.pages ? 5 : page.pages)) : page.pages}">
+        <a th:each="i : ${#numbers.sequence(start, end)}"
+           th:href="${base} + 'pageNo=' + ${i}"
+           th:text="${i}"
+           th:classappend="${i == page.pageNo} ? 'current'">1</a>
+    </th:block>
+
+    <a th:if="${page.hasNext}" th:href="${base} + 'pageNo=' + (page.pageNo + 1)">下一页</a>
+    <span th:unless="${page.hasNext}" class="disabled">下一页</span>
+
+    <span style="border:none;background:transparent;color:var(--text-sub)"
+          th:if="${page.total > 0}">
+        共 <span th:text="${page.total}">0</span> 条 /
+        <span th:text="${page.pages}">1</span> 页
+    </span>
+</div>
+</html>

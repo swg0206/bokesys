@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<!--
+  注册用户登录页，对应接口 API-24（Fun_16）。
+  登录后即可发表评论；游客身份仅能浏览。
+-->
+<head th:replace="~{front/fragments/head :: head(${pageTitle})}">
+    <title>用户登录</title>
+</head>
+<body>
+
+<header th:replace="~{front/fragments/header :: header(${null})}"></header>
+
+<div class="auth-card">
+    <h1>用户登录</h1>
+    <p class="sub">登录后即可参与评论</p>
+
+    <div class="alert alert-error" th:if="${error}" th:text="${error}">错误提示</div>
+    <div class="alert alert-success" th:if="${message}" th:text="${message}">提示</div>
+
+    <form th:action="@{/user/login}" method="post">
+        <input type="hidden" name="redirect" th:value="${redirect}">
+
+        <div class="form-group">
+            <label for="username">用户名</label>
+            <input type="text" id="username" name="username" required
+                   th:value="${username}" placeholder="请输入用户名" autocomplete="username">
+        </div>
+
+        <div class="form-group">
+            <label for="password">密码</label>
+            <input type="password" id="password" name="password" required
+                   placeholder="请输入密码" autocomplete="current-password">
+        </div>
+
+        <button class="btn" type="submit" style="width:100%;padding:10px">登 录</button>
+    </form>
+
+    <div class="foot">
+        还没有账号？<a th:href="@{/user/register}">立即注册</a>
+        <span style="color:var(--text-sub)"> · </span>
+        <a th:href="@{/}">返回首页</a>
+    </div>
+
+    <div class="alert alert-info" style="margin-top:18px;font-size:12.5px">
+        演示账号：user / 123456
+    </div>
+</div>
+
+<footer th:replace="~{front/fragments/footer :: footer(${null}, '/')}"></footer>
+
+<script th:src="@{/js/main.js}"></script>
+</body>
+</html>

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.swust.bokesys.mapper.UserMapper">
+
+    <select id="selectByUsername" resultType="cn.swust.bokesys.po.User">
+        SELECT id, username, password, nickname, email, avatar, status, create_time, update_time
+        FROM t_user
+        WHERE username = #{username}
+    </select>
+
+    <select id="selectById" resultType="cn.swust.bokesys.po.User">
+        SELECT id, username, password, nickname, email, avatar, status, create_time, update_time
+        FROM t_user
+        WHERE id = #{id}
+    </select>
+
+    <insert id="insert" parameterType="cn.swust.bokesys.po.User"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO t_user
+            (username, password, nickname, email, avatar, status, create_time, update_time)
+        VALUES
+            (#{username}, #{password}, #{nickname}, #{email}, #{avatar},
+             #{status}, #{createTime}, #{updateTime})
+    </insert>
+
+    <update id="updateProfile" parameterType="cn.swust.bokesys.po.User">
+        UPDATE t_user
+        <set>
+            <if test="nickname != null">nickname = #{nickname},</if>
+            <if test="email != null">email = #{email},</if>
+            <if test="avatar != null">avatar = #{avatar},</if>
+            update_time = CURRENT_TIMESTAMP
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <update id="updatePassword">
+        UPDATE t_user
+        SET password = #{password}, update_time = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateStatus">
+        UPDATE t_user
+        SET status = #{status}, update_time = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <select id="countAll" resultType="long">
+        SELECT COUNT(*) FROM t_user
+    </select>
+
+</mapper>

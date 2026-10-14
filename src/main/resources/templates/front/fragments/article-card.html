@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<!--
+  文章卡片片段，对应《概要设计》6.1.1：
+  以卡片形式展示封面、标题、摘要、分类标签、发布时间、浏览量与评论数，
+  鼠标悬停时卡片上浮并加深阴影，点击标题或封面进入文章详情页。
+-->
+<article class="article-card" th:fragment="card(article)">
+    <a th:href="@{/article/{id}(id=${article.id})}">
+        <img class="cover"
+             th:src="${article.coverImage != null and article.coverImage != ''}
+                      ? ${article.coverImage} : @{/img/placeholder-cover.svg}"
+             th:alt="${article.title}">
+    </a>
+
+    <h2>
+        <a th:href="@{/article/{id}(id=${article.id})}" th:text="${article.title}">文章标题</a>
+    </h2>
+
+    <p class="summary" th:text="${article.summary}">文章摘要</p>
+
+    <div class="tag-list" th:if="${article.tags != null and !#lists.isEmpty(article.tags)}">
+        <a class="tag"
+           th:each="t : ${article.tags}"
+           th:href="@{/tag/{id}(id=${t.id})}"
+           th:text="${t.name}">标签</a>
+    </div>
+
+    <div class="meta" style="margin-top:12px">
+        <a th:href="@{/category/{id}(id=${article.categoryId})}"
+           th:text="${article.categoryName}">分类</a>
+        <span th:text="${#temporals.format(article.createTime, 'yyyy-MM-dd')}">2026-10-13</span>
+        <span>浏览 <span th:text="${article.viewCount}">0</span></span>
+        <span>评论 <span th:text="${article.commentCount}">0</span></span>
+        <span class="badge-status badge-draft" th:if="${!article.published}">草稿</span>
+    </div>
+</article>
+</html>

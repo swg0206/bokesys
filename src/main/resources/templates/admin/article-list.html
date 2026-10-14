@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<!--
+  博客管理列表页，对应《概要设计》6.2.4 与接口 API-12（Fun_09）。
+  自上而下：标题与「发布文章」主按钮 → 筛选条件区 → 文章数据表格 → 分页组件。
+  表格列：复选框、ID、标题、分类、标签、状态、发布时间、浏览量、评论数、操作。
+
+  交互：勾选多行后出现「批量删除」；状态列用彩色徽标区分；
+  「删除」弹出二次确认（提示语与文档 6.2.4 一致），确认后调 DELETE /admin/articles/{id}；
+  筛选条件变更后自动回到第 1 页（表单里始终带一个隐藏的 pageNo=1）。
+-->
+<head th:replace="~{admin/fragments/head :: head('博客管理')}">
+    <title>博客管理</title>
+</head>
+<body>
+
+<div class="admin-layout">
+    <div th:replace="~{admin/fragments/sidebar :: sidebar(${activeMenu})}"></div>
+
+    <div class="admin-main">
+        <div th:replace="~{admin/fragments/topbar :: topbar('博客管理')}"></div>
+
+        <div class="admin-content">
+
+            <div class="page-head">
+                <h1>博客管理</h1>
+                <span class="spacer"></span>
+                <button type="button" class="btn btn-danger" disabled
+                        data-batch-delete="/admin/articles/batch-delete"
+                        data-label="批量删除">批量删除</button>
+                <a class="btn" th:href="@{/admin/articles/new}">＋ 发布文章</a>
+            </div>
+
+            <!-- 筛选条件区 -->
+            <form class="filter-bar" method="get" th:action="@{/admin/articles}"
+                  data-filter-form>
+                <input type="hidden" name="pageNo" value="1">
+
+                <div class="field">
+                    <label for="f-title">标题关键词</label>
+                    <input type="text" id="f-title" name="title" th:value="${title}"
+                           placeholder="按标题模糊匹配">
+                </div>
+
+                <div class="field">
+                    <label for="f-category">分类</label>
+                    <select id="f-category" name="categoryId" data-auto-submit>
+                        <option value="">全部分类</option>
+                        <option th:each="c : ${categories}"
+                                th:value="${c.id}"
+                                th:text="${c.name}"
+                                th:selected="${categoryId != null and categoryId == c.id}">分类</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label for="f-status">状态</label>
+                    <select id="f-status" name="status" data-auto-submit>
+                        <option value="">全部状态</option>
+                        <option value="1" th:selected="${status != null and status == 1}">已发布</option>
+                        <option value="0" th:selected="${status != null and status == 0}">草稿</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label>&nbsp;</label>
+                    <div style="display:flex;gap:8px">
+                        <button class="btn" type="submit">查询</button>
+                        <a class="btn btn-outline" th:href="@{/admin/articles}">重置</a>
+                    </div>
+                </div>
+            </form>
+
+            <!-- 文章数据表格 -->
+            <div class="table-wrap" th:if="${page != null and !page.empty}">
+                <table class="data-table">
+                    <thead>
+                    <tr>
+                        <th style="width:38px">
+                            <input type="checkbox" data-select-all aria-label="全选">
+                        </th>
+                        <th style="width:56px">ID</th>
+                        <th>标题</th>
+                        <th>分类</th>
+                        <th>标签</th>
+                        <th style="width:88px">状态</th>
+                        <th style="width:150px">发布时间</th>
+                        <th style="width:78px">浏览量</th>
+                        <th style="width:72px">评论数</th>
+                        <th style="width:132px">操作</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="a : ${page.list}">
+                        <td>
+                            <input type="checkbox" data-row-check th:value="${a.id}"
+                                   aria-label="选择此行">
+                        </td>
+                        <td class="text-sub" th:text="${a.id}">1</td>
+                        <td class="title-cell">
+                            <a th:href="@{/article/{id}(id=${a.id})}" target="_blank"
+                               th:text="${a.title}">标题</a>
+                        </td>
+                        <td th:text="${a.categoryName}">分类</td>
+                        <td>
+                            <span class="text-sub" th:text="${a.tagNames}">标签</span>
+                        </td>
+                        <td>
+                            <span class="badge-status badge-published"
+                                  th:if="${a.published}">已发布</span>
+                            <span class="badge-status badge-draft"
+                                  th:unless="${a.published}">草稿</span>
+                        </td>
+                        <td class="text-sub"
+                            th:text="${#temporals.format(a.createTime, 'yyyy-MM-dd HH:mm')}">时间</td>
+                        <td th:text="${a.viewCount}">0</td>
+                        <td th:text="${a.commentCount}">0</td>
+                        <td class="actions">
+                            <a class="btn btn-outline btn-sm"
+                               th:href="@{/admin/articles/{id}/edit(id=${a.id})}">编辑</a>
+                            <button type="button" class="btn btn-danger btn-sm"
+                                    data-row-action
+                                    th:attr="data-url=@{/admin/articles/{id}(id=${a.id})}"
+                                    data-method="DELETE"
+                                    data-confirm-title="删除文章"
+                                    data-confirm="删除后该文章及其评论将不可恢复，确定删除吗？">删除</button>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="empty-state" th:if="${page == null or page.empty}">
+                <p style="margin:0 0 6px;font-size:16px">没有符合条件的文章</p>
+                <p style="margin:0;font-size:13.5px">换个筛选条件，或直接发布一篇新文章</p>
+            </div>
+
+            <div th:replace="~{admin/fragments/pagination :: pagination(${page}, ${pageBase})}"></div>
+
+        </div>
+    </div>
+</div>
+
+<script th:src="@{/js/admin.js}"></script>
+</body>
+</html>

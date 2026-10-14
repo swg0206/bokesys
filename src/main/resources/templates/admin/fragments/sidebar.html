@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<!--
+  后台侧边导航，对应《概要设计》6.2.3：
+  「仪表盘、博客管理、分类管理、标签管理、评论管理、友情链接、系统管理、个人信息」
+  八个入口集中在统一的侧边导航中，当前菜单项高亮。
+
+  评论管理右侧的徽标只在当前页提供了待审核数量时才展示，
+  避免为了一个角标让所有后台控制器都去查一次评论数。
+-->
+<aside class="admin-sidebar" th:fragment="sidebar(activeMenu)">
+    <div class="brand">
+        <img class="logo" th:src="@{/img/logo.svg}" alt="">
+        <span>博客后台</span>
+    </div>
+
+    <ul class="admin-nav">
+        <li>
+            <a th:href="@{/admin/dashboard}"
+               th:classappend="${activeMenu == 'dashboard'} ? 'active'">
+                仪表盘
+            </a>
+        </li>
+
+        <li class="group-title">内容</li>
+        <li>
+            <a th:href="@{/admin/articles}"
+               th:classappend="${activeMenu == 'article'} ? 'active'">
+                博客管理
+            </a>
+        </li>
+        <li>
+            <a th:href="@{/admin/categories}"
+               th:classappend="${activeMenu == 'category'} ? 'active'">
+                分类管理
+            </a>
+        </li>
+        <li>
+            <a th:href="@{/admin/tags}"
+               th:classappend="${activeMenu == 'tag'} ? 'active'">
+                标签管理
+            </a>
+        </li>
+
+        <li class="group-title">互动</li>
+        <li>
+            <a th:href="@{/admin/comments}"
+               th:classappend="${activeMenu == 'comment'} ? 'active'">
+                评论管理
+                <span class="badge"
+                      th:if="${pendingCommentCount != null and pendingCommentCount > 0}"
+                      th:text="${pendingCommentCount}">0</span>
+            </a>
+        </li>
+        <li>
+            <a th:href="@{/admin/links}"
+               th:classappend="${activeMenu == 'link'} ? 'active'">
+                友情链接
+            </a>
+        </li>
+
+        <li class="group-title">站点</li>
+        <li>
+            <a th:href="@{/admin/config}"
+               th:classappend="${activeMenu == 'config'} ? 'active'">
+                系统管理
+            </a>
+        </li>
+        <li>
+            <a th:href="@{/admin/profile}"
+               th:classappend="${activeMenu == 'profile'} ? 'active'">
+                个人信息
+            </a>
+        </li>
+
+        <li class="group-title">其他</li>
+        <li>
+            <a th:href="@{/}" target="_blank">查看前台</a>
+        </li>
+        <li>
+            <a th:href="@{/admin/logout}">退出登录</a>
+        </li>
+    </ul>
+</aside>
+</html>

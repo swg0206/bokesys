@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<!--
+  评论楼片段，对应《概要设计》6.2.1：
+  评论支持回复，形成评论楼；回复某条评论时输入框上方显示「回复 @昵称」。
+
+  本片段通过 th:replace 递归调用自身来渲染嵌套回复 —— 数据侧的树已经由
+  CommentService 组装好，模板这边只负责按层级展开，不做任何查询。
+-->
+<div class="comment-list" th:fragment="tree(nodes)">
+    <div class="comment-item" th:each="c : ${nodes}" th:id="'comment-' + ${c.id}">
+        <div class="head">
+            <span class="nickname" th:text="${c.nickname}">昵称</span>
+            <span class="time"
+                  th:text="${#temporals.format(c.createTime, 'yyyy-MM-dd HH:mm')}">时间</span>
+            <button type="button" class="btn btn-outline btn-sm"
+                    th:attr="data-reply-to=${c.nickname}, data-reply-id=${c.id}">回复</button>
+        </div>
+
+        <div class="body">
+            <span class="reply-to" th:if="${c.replyToNickname != null}">
+                回复 @<span th:text="${c.replyToNickname}">某人</span>：
+            </span>
+            <span th:text="${c.content}">评论内容</span>
+        </div>
+
+        <!-- 递归渲染子回复 -->
+        <div class="comment-children" th:if="${c.hasChildren}">
+            <th:block th:replace="~{front/fragments/comment-tree :: tree(${c.children})}"></th:block>
+        </div>
+    </div>
+</div>
+</html>

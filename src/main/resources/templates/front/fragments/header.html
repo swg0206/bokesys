@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<!--
+  前台顶栏片段，对应《概要设计》6.1.1：
+  左侧站点 Logo 与名称，中间「首页 / 分类 / 标签 / 归档」主导航，
+  右侧搜索输入框与「登录 / 注册」入口。整块 position: sticky 吸顶。
+
+  「分类」「标签」没有独立的索引页，因此做成下拉直接跳到对应的筛选页。
+  窄屏（<=640px）由 main.js 折叠成汉堡菜单。
+-->
+<header class="site-header" th:fragment="header(activeNav)">
+    <div class="inner">
+        <a class="brand" th:href="@{/}">
+            <img class="logo" th:src="@{/img/logo.svg}" alt="">
+            <span th:text="${site != null ? (site['site_name'] ?: '博客系统') : '博客系统'}">博客系统</span>
+        </a>
+
+        <button class="nav-toggle" type="button" aria-label="展开导航">
+            <span></span><span></span><span></span>
+        </button>
+
+        <nav class="nav-links">
+            <a th:href="@{/}" th:classappend="${activeNav == 'home'} ? 'active'">首页</a>
+
+            <div class="nav-dropdown">
+                <a href="javascript:void(0)"
+                   th:classappend="${activeNav == 'category'} ? 'active'">
+                    分类<span class="caret">▼</span>
+                </a>
+                <div class="menu">
+                    <a th:each="cat : ${sidebarCategories}" th:href="@{/category/{id}(id=${cat.id})}">
+                        <span th:text="${cat.name}">分类</span>
+                        <span class="count" th:text="${cat.articleCount}">0</span>
+                    </a>
+                    <a th:if="${sidebarCategories == null or #lists.isEmpty(sidebarCategories)}"
+                       href="javascript:void(0)">
+                        <span>暂无分类</span>
+                    </a>
+                </div>
+            </div>
+
+            <div class="nav-dropdown">
+                <a href="javascript:void(0)"
+                   th:classappend="${activeNav == 'tag'} ? 'active'">
+                    标签<span class="caret">▼</span>
+                </a>
+                <div class="menu">
+                    <a th:each="t : ${sidebarTags}" th:href="@{/tag/{id}(id=${t.id})}">
+                        <span th:text="${t.name}">标签</span>
+                        <span class="count" th:text="${t.articleCount}">0</span>
+                    </a>
+                    <a th:if="${sidebarTags == null or #lists.isEmpty(sidebarTags)}"
+                       href="javascript:void(0)">
+                        <span>暂无标签</span>
+                    </a>
+                </div>
+            </div>
+
+            <a th:href="@{/archives}" th:classappend="${activeNav == 'archive'} ? 'active'">归档</a>
+        </nav>
+
+        <div class="header-actions">
+            <form class="search-form" th:action="@{/search}" method="get" role="search">
+                <input type="search" name="keyword" placeholder="搜索文章…"
+                       th:value="${keyword}" aria-label="搜索关键词">
+                <button class="btn btn-sm" type="submit">搜索</button>
+            </form>
+
+            <!-- 已登录的注册用户才显示昵称与退出 -->
+            <th:block th:if="${session.loginUser != null}">
+                <a class="btn btn-outline btn-sm" th:href="@{/user/logout}">
+                    <span th:text="${session.loginUser.displayName}">用户</span> · 退出
+                </a>
+            </th:block>
+            <th:block th:unless="${session.loginUser != null}">
+                <a class="btn btn-outline btn-sm" th:href="@{/user/login}">登录</a>
+                <a class="btn btn-sm" th:href="@{/user/register}">注册</a>
+            </th:block>
+        </div>
+    </div>
+</header>
+</html>

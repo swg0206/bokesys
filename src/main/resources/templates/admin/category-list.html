@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<!--
+  分类管理，对应接口 API-17（Fun_10）。
+  列表展示名称、描述、排序号与该分类下的文章数量。
+
+  新增与编辑复用同一个表单：点击表格里的「编辑」会把该行数据填进表单，
+  并把提交方法切换为 PUT /admin/categories/{id}；提交成功后回到新增模式。
+  删除由 CategoryService 校验占用，有文章时返回提示而不是静默失败。
+-->
+<head th:replace="~{admin/fragments/head :: head('分类管理')}">
+    <title>分类管理</title>
+</head>
+<body>
+
+<div class="admin-layout">
+    <div th:replace="~{admin/fragments/sidebar :: sidebar(${activeMenu})}"></div>
+
+    <div class="admin-main">
+        <div th:replace="~{admin/fragments/topbar :: topbar('分类管理')}"></div>
+
+        <div class="admin-content">
+
+            <div class="page-head">
+                <h1>分类管理</h1>
+                <span class="spacer"></span>
+                <span class="text-sub">共 <span th:text="${#lists.size(categories)}">0</span> 个分类</span>
+            </div>
+
+            <div class="two-col">
+                <!-- 分类列表 -->
+                <div class="table-wrap">
+                    <table class="data-table">
+                        <thead>
+                        <tr>
+                            <th style="width:56px">ID</th>
+                            <th>分类名称</th>
+                            <th>描述</th>
+                            <th style="width:80px">排序号</th>
+                            <th style="width:90px">文章数</th>
+                            <th style="width:132px">操作</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="c : ${categories}">
+                            <td class="text-sub" th:text="${c.id}">1</td>
+                            <td th:text="${c.name}">分类名</td>
+                            <td class="text-sub" th:text="${c.description}">描述</td>
+                            <td th:text="${c.sortOrder}">0</td>
+                            <td>
+                                <span class="badge-status badge-published"
+                                      th:if="${c.articleCount != null and c.articleCount > 0}"
+                                      th:text="${c.articleCount} + ' 篇'">0 篇</span>
+                                <span class="badge-status badge-draft"
+                                      th:unless="${c.articleCount != null and c.articleCount > 0}">0 篇</span>
+                            </td>
+                            <td class="actions">
+                                <button type="button" class="btn btn-outline btn-sm"
+                                        th:attr="data-id=${c.id},
+                                                 data-name=${c.name},
+                                                 data-description=${c.description},
+                                                 data-sort=${c.sortOrder}"
+                                        onclick="startEdit(this)">编辑</button>
+                                <button type="button" class="btn btn-danger btn-sm"
+                                        data-row-action
+                                        th:attr="data-url=@{/admin/categories/{id}(id=${c.id})}"
+                                        data-method="DELETE"
+                                        data-confirm-title="删除分类"
+                                        th:data-confirm="${'确定删除分类「' + c.name + '」吗？若该分类下仍有文章，系统会拒绝删除。'}">
+                                    删除
+                                </button>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(categories)}">
+                            <td colspan="6" class="empty-state">还没有分类</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- 新增 / 编辑表单 -->
+                <div class="card">
+                    <h2 id="formTitle">新增分类</h2>
+                    <form id="categoryForm" method="post"
+                          th:action="@{/admin/categories}" data-ajax="post">
+                        <input type="hidden" name="id" id="categoryId" value="">
+
+                        <div class="form-group">
+                            <label class="required" for="categoryName">分类名称</label>
+                            <input type="text" id="categoryName" name="name" required maxlength="50"
+                                   placeholder="例如：后端开发">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="categoryDescription">分类描述</label>
+                            <input type="text" id="categoryDescription" name="description"
+                                   maxlength="200" placeholder="选填，展示在前台分类页">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="categorySort">排序号</label>
+                            <input type="number" id="categorySort" name="sortOrder" value="0"
+                                   min="0" max="999">
+                            <div class="help">升序排列，数字越小越靠前</div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn" id="submitBtn">新增分类</button>
+                            <button type="button" class="btn btn-outline" id="cancelBtn"
+                                    style="display:none" onclick="cancelEdit()">取消编辑</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script th:src="@{/js/admin.js}"></script>
+<script>
+    function startEdit(btn) {
+        document.getElementById('categoryId').value = btn.dataset.id;
+        document.getElementById('categoryName').value = btn.dataset.name;
+        document.getElementById('categoryDescription').value =
+            btn.dataset.description === 'null' ? '' : btn.dataset.description;
+        document.getElementById('categorySort').value = btn.dataset.sort;
+
+        var form = document.getElementById('categoryForm');
+        form.setAttribute('action', '/admin/categories/' + btn.dataset.id);
+        form.setAttribute('data-ajax', 'put');
+
+        document.getElementById('formTitle').textContent =
+            '编辑分类：' + btn.dataset.name;
+        document.getElementById('submitBtn').textContent = '保存修改';
+        document.getElementById('cancelBtn').style.display = 'inline-block';
+        document.getElementById('categoryName').focus();
+    }
+
+    function cancelEdit() {
+        var form = document.getElementById('categoryForm');
+        form.reset();
+        form.setAttribute('action', '/admin/categories');
+        form.setAttribute('data-ajax', 'post');
+        document.getElementById('categoryId').value = '';
+        document.getElementById('formTitle').textContent = '新增分类';
+        document.getElementById('submitBtn').textContent = '新增分类';
+        document.getElementById('cancelBtn').style.display = 'none';
+    }
+</script>
+</body>
+</html>

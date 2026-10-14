@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<!--
+  业务异常提示页。
+  用于页面请求触发的业务规则拒绝（例如「该分类下存在 3 篇文章，请先转移或解除关联」），
+  异步请求走的是 Result JSON，不会落到这里。
+-->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>操作未能完成</title>
+    <link rel="icon" type="image/svg+xml" th:href="@{/img/logo.svg}">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body style="display:flex;align-items:center;justify-content:center;min-height:100vh">
+<div style="max-width:520px;width:100%;padding:24px">
+    <div class="auth-card" style="text-align:center;margin:0">
+        <div style="font-size:46px;line-height:1;margin-bottom:12px">⚠️</div>
+        <h2 style="margin:0 0 10px;font-size:19px">操作未能完成</h2>
+        <p style="color:var(--text-sub);font-size:14.5px;margin-bottom:24px"
+           th:text="${message}">原因说明</p>
+        <div style="display:flex;gap:10px;justify-content:center">
+            <a class="btn btn-outline" th:href="${backUrl != null} ? ${backUrl} : @{/}">返回上一页</a>
+            <a class="btn" th:href="@{/}">回到首页</a>
+        </div>
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" width="640" height="360" role="img" aria-label="文章封面占位图">
+    <defs>
+        <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#eff6ff"/>
+            <stop offset="100%" stop-color="#dbeafe"/>
+        </linearGradient>
+    </defs>
+    <rect width="640" height="360" fill="url(#bg)"/>
+    <circle cx="140" cy="96" r="70" fill="#bfdbfe" opacity=".55"/>
+    <circle cx="520" cy="286" r="92" fill="#93c5fd" opacity=".38"/>
+    <path d="M232 214h124l30 32v-32h22a10 10 0 0 0 10-10v-78a10 10 0 0 0-10-10H232a10 10 0 0 0-10 10v78a10 10 0 0 0 10 10z"
+          fill="#ffffff" opacity=".9"/>
+    <path d="M250 168h108M250 190h84" stroke="#93c5fd" stroke-width="9" stroke-linecap="round"/>
+</svg>

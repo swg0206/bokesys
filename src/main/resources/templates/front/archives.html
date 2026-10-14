@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<!--
+  归档页：按年月分组展示已发布文章。
+  导航栏的「归档」入口需要它；接口清单未单列，复用「按状态分页」的能力在服务端分组。
+-->
+<head th:replace="~{front/fragments/head :: head(${pageTitle})}">
+    <title>归档</title>
+</head>
+<body>
+
+<header th:replace="~{front/fragments/header :: header(${activeNav})}"></header>
+
+<div class="page-wrap">
+    <div class="grid-main">
+        <main>
+            <div style="background:#fff;border:1px solid var(--border);border-radius:var(--radius);
+                        padding:16px 20px;margin-bottom:18px">
+                <h2 style="margin:0 0 4px;font-size:18px">文章归档</h2>
+                <p style="margin:0;color:var(--text-sub);font-size:13.5px">
+                    共 <span th:text="${total}">0</span> 篇已发布文章
+                </p>
+            </div>
+
+            <div th:if="${archiveGroups != null and !#maps.isEmpty(archiveGroups)}">
+                <div class="article-card" th:each="group : ${archiveGroups}"
+                     style="padding:18px 22px">
+                    <h3 style="margin:0 0 12px;font-size:16px;color:var(--primary)"
+                        th:text="${group.key}">2026 年 10 月</h3>
+                    <ul style="margin:0;padding-left:18px">
+                        <li th:each="a : ${group.value}" style="margin-bottom:7px">
+                            <a th:href="@{/article/{id}(id=${a.id})}" th:text="${a.title}">标题</a>
+                            <span style="color:var(--text-sub);font-size:12.5px;margin-left:8px"
+                                  th:text="${#temporals.format(a.createTime, 'MM-dd')}">10-13</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="empty-state" th:if="${archiveGroups == null or #maps.isEmpty(archiveGroups)}">
+                还没有已发布的文章
+            </div>
+        </main>
+
+        <div th:replace="~{front/fragments/sidebar :: sidebar}"></div>
+    </div>
+</div>
+
+<footer th:replace="~{front/fragments/footer :: footer(${null}, '/')}"></footer>
+
+<button class="back-to-top" type="button" aria-label="回到顶部">↑</button>
+<script th:src="@{/js/main.js}"></script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" role="img" aria-label="站点标志">
+    <rect x="1" y="1" width="30" height="30" rx="8" fill="#2563eb"/>
+    <path d="M10 8.5h8.6L23 12.9V23.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 9 23.5v-13A1.5 1.5 0 0 1 10.5 9z"
+          fill="#ffffff" opacity=".22"/>
+    <path d="M10.2 8.6h8.4L23 13v10.4a1.6 1.6 0 0 1-1.6 1.6h-11.2A1.6 1.6 0 0 1 8.6 23.4V10.2a1.6 1.6 0 0 1 1.6-1.6z"
+          fill="none" stroke="#ffffff" stroke-width="1.6" stroke-linejoin="round"/>
+    <path d="M12.4 14.6h7.2M12.4 18.2h7.2M12.4 21.2h4.4"
+          stroke="#ffffff" stroke-width="1.6" stroke-linecap="round"/>
+</svg>

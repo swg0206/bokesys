@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.swust.bokesys.mapper.LinkMapper">
+
+    <!-- 前台只展示 status=1 的友链，按 sort_order 升序（对应 idx_sort_status 联合索引） -->
+    <select id="selectVisible" resultType="cn.swust.bokesys.po.Link">
+        SELECT id, name, url, sort_order, status, create_time
+        FROM t_link
+        WHERE status = 1
+        ORDER BY sort_order ASC, id ASC
+    </select>
+
+    <select id="selectAll" resultType="cn.swust.bokesys.po.Link">
+        SELECT id, name, url, sort_order, status, create_time
+        FROM t_link
+        ORDER BY sort_order ASC, id ASC
+    </select>
+
+    <select id="selectById" resultType="cn.swust.bokesys.po.Link">
+        SELECT id, name, url, sort_order, status, create_time
+        FROM t_link WHERE id = #{id}
+    </select>
+
+    <insert id="insert" parameterType="cn.swust.bokesys.po.Link"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO t_link (name, url, sort_order, status, create_time)
+        VALUES (#{name}, #{url}, #{sortOrder}, #{status}, #{createTime})
+    </insert>
+
+    <update id="update" parameterType="cn.swust.bokesys.po.Link">
+        UPDATE t_link
+        <set>
+            <if test="name != null">name = #{name},</if>
+            <if test="url != null">url = #{url},</if>
+            <if test="sortOrder != null">sort_order = #{sortOrder},</if>
+            <if test="status != null">status = #{status},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM t_link WHERE id = #{id}
+    </delete>
+
+    <select id="countAll" resultType="long">
+        SELECT COUNT(*) FROM t_link
+    </select>
+
+</mapper>

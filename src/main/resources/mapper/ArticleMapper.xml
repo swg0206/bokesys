@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.swust.bokesys.mapper.ArticleMapper">
+
+    <!--
+      ArticleVO：标量字段交给 autoMapping（已开启 map_underscore_to_camel_case），
+      标签集合用嵌套 select 一次装配好，避免模板层再去查库。
+    -->
+    <resultMap id="articleVoMap" type="cn.swust.bokesys.vo.ArticleVO" autoMapping="true">
+        <id property="id" column="id"/>
+        <result property="categoryName" column="categoryName"/>
+        <collection property="tags" column="id"
+                    select="cn.swust.bokesys.mapper.TagMapper.selectByArticleId"/>
+    </resultMap>
+
+    <sql id="articleColumns">
+        a.id, a.title, a.summary, a.content, a.cover_image, a.category_id,
+        a.status, a.view_count, a.comment_count, a.create_time, a.update_time,
+        c.name AS categoryName
+    </sql>
+
+    <!--
+      前台分页：只取已发布文章，按发布时间倒序。
+      keyword 同时模糊匹配标题与正文 —— MySQL 版脚本里对应 idx_title_content 全文索引，
+      H2 不支持 FULLTEXT（已实测），此处统一用 LIKE，两库行为一致。
+    -->
+    <select id="selectFrontPage" resultMap="articleVoMap">
+        SELECT
+        <include refid="articleColumns"/>
+        FROM t_article a
+        JOIN t_category c ON a.category_id = c.id
+        <where>
+            a.status = 1
+            <if test="keyword != null and keyword != ''">
+                AND (a.title LIKE CONCAT('%', #{keyword}, '%')
+                OR a.content LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+            <if test="categoryId != null">
+                AND a.category_id = #{categoryId}
+            </if>
+            <if test="tagId != null">
+                AND a.id IN (SELECT at.article_id FROM t_article_tag at WHERE at.tag_id = #{tagId})
+            </if>
+        </where>
+        ORDER BY a.create_time DESC, a.id DESC
+    </select>
+
+    <!-- 后台分页：不限状态，支持标题、分类、状态组合筛选 -->
+    <select id="selectAdminPage" resultMap="articleVoMap">
+        SELECT
+        <include refid="articleColumns"/>
+        FROM t_article a
+        JOIN t_category c ON a.category_id = c.id
+        <where>
+            <if test="title != null and title != ''">
+                AND a.title LIKE CONCAT('%', #{title}, '%')
+            </if>
+            <if test="keyword != null and keyword != ''">
+                AND (a.title LIKE CONCAT('%', #{keyword}, '%')
+                OR a.content LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+            <if test="categoryId != null">
+                AND a.category_id = #{categoryId}
+            </if>
+            <if test="status != null">
+                AND a.status = #{status}
+            </if>
+            <if test="tagId != null">
+                AND a.id IN (SELECT at.article_id FROM t_article_tag at WHERE at.tag_id = #{tagId})
+            </if>
+        </where>
+        ORDER BY a.create_time DESC, a.id DESC
+    </select>
+
+    <select id="selectVoById" resultMap="articleVoMap">
+        SELECT
+        <include refid="articleColumns"/>
+        FROM t_article a
+        JOIN t_category c ON a.category_id = c.id
+        WHERE a.id = #{id}
+    </select>
+
+    <select id="selectById" resultType="cn.swust.bokesys.po.Article">
+        SELECT id, title, summary, content, cover_image, category_id,
+               status, view_count, comment_count, create_time, update_time
+        FROM t_article
+        WHERE id = #{id}
+    </select>
+
+    <!-- 自增主键回填，供业务逻辑层继续处理标签关联 -->
+    <insert id="insert" parameterType="cn.swust.bokesys.po.Article"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO t_article
+            (title, summary, content, cover_image, category_id, status,
+             view_count, comment_count, create_time, update_time)
+        VALUES
+            (#{title}, #{summary}, #{content}, #{coverImage}, #{categoryId}, #{status},
+             0, 0, #{createTime}, #{updateTime})
+    </insert>
+
+    <update id="update" parameterType="cn.swust.bokesys.po.Article">
+        UPDATE t_article
+        <set>
+            <if test="title != null">title = #{title},</if>
+            <if test="summary != null">summary = #{summary},</if>
+            <if test="content != null">content = #{content},</if>
+            <if test="coverImage != null">cover_image = #{coverImage},</if>
+            <if test="categoryId != null">category_id = #{categoryId},</if>
+            <if test="status != null">status = #{status},</if>
+            update_time = #{updateTime}
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM t_article WHERE id = #{id}
+    </delete>
+
+    <delete id="deleteBatch">
+        DELETE FROM t_article WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <update id="incrementViewCount">
+        UPDATE t_article SET view_count = view_count + 1 WHERE id = #{id}
+    </update>
+
+    <update id="incrementCommentCount">
+        UPDATE t_article SET comment_count = comment_count + 1 WHERE id = #{id}
+    </update>
+
+    <!-- 减去时兜底，避免并发或重复删除把计数压成负数 -->
+    <update id="decrementCommentCount">
+        UPDATE t_article SET comment_count = CASE WHEN comment_count &gt; 0
+                                                  THEN comment_count - 1 ELSE 0 END
+        WHERE id = #{id}
+    </update>
+
+    <select id="countByCategoryId" resultType="long">
+        SELECT COUNT(*) FROM t_article WHERE category_id = #{categoryId}
+    </select>
+
+    <select id="countByTagId" resultType="long">
+        SELECT COUNT(*)
+        FROM t_article_tag at
+        JOIN t_article a ON a.id = at.article_id
+        WHERE at.tag_id = #{tagId} AND a.status = 1
+    </select>
+
+    <select id="countAll" resultType="long">
+        SELECT COUNT(*) FROM t_article
+    </select>
+
+    <select id="countByStatus" resultType="long">
+        SELECT COUNT(*) FROM t_article WHERE status = #{status}
+    </select>
+
+    <select id="sumViewCount" resultType="long">
+        SELECT COALESCE(SUM(view_count), 0) FROM t_article
+    </select>
+
+    <select id="selectRecent" resultType="cn.swust.bokesys.po.Article">
+        SELECT id, title, summary, cover_image, category_id, status,
+               view_count, comment_count, create_time, update_time
+        FROM t_article
+        ORDER BY create_time DESC, id DESC
+        LIMIT #{limit}
+    </select>
+
+    <!--
+      上一篇 / 下一篇：以 (create_time, id) 作为全序，避免同一秒发布的两篇文章
+      因为只比较时间而互相跳过或死循环。
+    -->
+    <select id="selectPrev" resultType="cn.swust.bokesys.po.Article">
+        SELECT id, title, create_time, status
+        FROM t_article
+        WHERE status = 1
+          AND (create_time &lt; #{createTime}
+               OR (create_time = #{createTime} AND id &lt; #{id}))
+        ORDER BY create_time DESC, id DESC
+        LIMIT 1
+    </select>
+
+    <select id="selectNext" resultType="cn.swust.bokesys.po.Article">
+        SELECT id, title, create_time, status
+        FROM t_article
+        WHERE status = 1
+          AND (create_time &gt; #{createTime}
+               OR (create_time = #{createTime} AND id &gt; #{id}))
+        ORDER BY create_time ASC, id ASC
+        LIMIT 1
+    </select>
+
+    <!--
+      趋势图：按天分组统计。
+      刻意用 DATE() 而不是 MySQL 的 DATE_FORMAT() —— H2 没有 DATE_FORMAT 函数（已实测
+      「Function "DATE_FORMAT" not found」）。日期在 Java 侧补零，两库通吃。
+    -->
+    <select id="selectTrendSince" resultType="cn.swust.bokesys.vo.TrendPointVO">
+        SELECT DATE(create_time) AS statDate, COUNT(*) AS articleCount
+        FROM t_article
+        WHERE create_time &gt;= #{startTime}
+        GROUP BY DATE(create_time)
+        ORDER BY DATE(create_time)
+    </select>
+
+    <!-- 各分类文章分布：用 LEFT JOIN 保证没有文章的分类也出现在结果里 -->
+    <select id="selectCategoryStats" resultType="cn.swust.bokesys.vo.CategoryStatVO">
+        SELECT c.name AS name, COUNT(a.id) AS articleCount
+        FROM t_category c
+        LEFT JOIN t_article a ON a.category_id = c.id AND a.status = 1
+        GROUP BY c.id, c.name, c.sort_order
+        ORDER BY c.sort_order
+    </select>
+
+</mapper>

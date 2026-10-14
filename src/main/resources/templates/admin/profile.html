@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<!--
+  个人信息维护，对应接口 API-22（Fun_15）：用户名、密码、头像、邮箱。
+  头像既可以直接填图片地址，也可以上传本地文件（走 POST /admin/profile/upload）。
+-->
+<head th:replace="~{admin/fragments/head :: head('个人信息')}">
+    <title>个人信息</title>
+</head>
+<body>
+
+<div class="admin-layout">
+    <div th:replace="~{admin/fragments/sidebar :: sidebar(${activeMenu})}"></div>
+
+    <div class="admin-main">
+        <div th:replace="~{admin/fragments/topbar :: topbar('个人信息')}"></div>
+
+        <div class="admin-content">
+
+            <div class="page-head">
+                <h1>个人信息</h1>
+            </div>
+
+            <div class="two-col">
+                <!-- 基本资料 -->
+                <div class="card">
+                    <h2>基本资料</h2>
+                    <form id="profileForm" method="post" th:action="@{/admin/profile}"
+                          data-ajax="put">
+                        <div class="form-group">
+                            <label>登录账号</label>
+                            <input type="text" th:value="${admin != null} ? ${admin.username} : ''"
+                                   disabled>
+                            <div class="help">登录账号是唯一标识，暂不支持修改</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="nickname">昵称</label>
+                            <input type="text" id="nickname" name="nickname" maxlength="50"
+                                   th:value="${admin != null} ? ${admin.nickname} : ''"
+                                   placeholder="显示在后台顶栏">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="email">邮箱</label>
+                            <input type="email" id="email" name="email" maxlength="100"
+                                   th:value="${admin != null} ? ${admin.email} : ''"
+                                   placeholder="选填">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="avatarInput">头像</label>
+                            <input type="text" id="avatarInput" name="avatar" maxlength="255"
+                                   th:value="${admin != null} ? ${admin.avatar} : ''"
+                                   placeholder="图片地址，或直接上传">
+                            <input type="file" id="avatarFile" accept="image/*"
+                                   style="margin-top:8px">
+                            <div class="help">支持 jpg / png / gif / webp，单张不超过 5MB</div>
+                            <img id="avatarPreview"
+                                 th:if="${admin != null and admin.avatar != null and admin.avatar != ''}"
+                                 th:src="${admin.avatar}" alt="头像预览"
+                                 style="margin-top:10px;width:88px;height:88px;
+                                        object-fit:cover;border-radius:50%">
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn">保存资料</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- 修改密码 -->
+                <div class="card">
+                    <h2>修改密码</h2>
+                    <form id="passwordForm" method="post"
+                          th:action="@{/admin/profile/password}" data-ajax="put"
+                          data-reload="false">
+                        <div class="form-group">
+                            <label class="required" for="oldPassword">原密码</label>
+                            <input type="password" id="oldPassword" name="oldPassword" required
+                                   placeholder="请输入当前密码" autocomplete="current-password">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="required" for="newPassword">新密码</label>
+                            <input type="password" id="newPassword" name="newPassword" required
+                                   minlength="6" maxlength="32" placeholder="不少于 6 位"
+                                   autocomplete="new-password">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="required" for="confirmPassword">确认新密码</label>
+                            <input type="password" id="confirmPassword" name="confirmPassword"
+                                   required minlength="6" maxlength="32"
+                                   placeholder="请再次输入新密码" autocomplete="new-password">
+                        </div>
+
+                        <div class="alert alert-info" style="font-size:12.5px">
+                            密码以 PBKDF2 加盐哈希存储，系统不保存明文。
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn">修改密码</button>
+                        </div>
+                    </form>
+
+                    <div class="alert alert-info" th:if="${admin != null and admin.lastLoginTime != null}"
+                         style="margin-top:16px;font-size:12.5px">
+                        最近登录：
+                        <span th:text="${#temporals.format(admin.lastLoginTime, 'yyyy-MM-dd HH:mm')}">时间</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script th:src="@{/js/admin.js}"></script>
+<script>
+    /* 头像上传复用 /admin/profile/upload：上传成功后把返回的访问路径填进输入框 */
+    (function () {
+        var input = document.getElementById('avatarFile');
+        if (!input) {
+            return;
+        }
+        input.addEventListener('change', function () {
+            var file = input.files && input.files[0];
+            if (!file) {
+                return;
+            }
+            var data = new FormData();
+            data.append('file', file);
+
+            fetch('/admin/profile/upload', {
+                method: 'POST',
+                headers: {'X-Requested-With': 'XMLHttpRequest'},
+                body: data
+            }).then(function (r) {
+                return r.json();
+            }).then(function (res) {
+                if (res.code === 200) {
+                    document.getElementById('avatarInput').value = res.data;
+                    var preview = document.getElementById('avatarPreview');
+                    if (preview) {
+                        preview.src = res.data;
+                    }
+                    window.adminToast('头像已上传，记得点「保存资料」', true);
+                } else {
+                    window.adminToast(res.message || '上传失败', false);
+                }
+            }).catch(function () {
+                window.adminToast('上传失败，请稍后重试', false);
+            });
+        });
+    })();
+</script>
+</body>
+</html>

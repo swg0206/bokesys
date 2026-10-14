@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<!-- 500：非预期异常的统一兜底页。堆栈只进日志，不回显给用户（对应文档 3.2） -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>服务器错误</title>
+    <link rel="icon" type="image/svg+xml" th:href="@{/img/logo.svg}">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body style="display:flex;align-items:center;justify-content:center;min-height:100vh">
+<div style="max-width:520px;width:100%;padding:24px">
+    <div class="auth-card" style="text-align:center;margin:0">
+        <div style="font-size:52px;font-weight:700;color:var(--danger);line-height:1">500</div>
+        <h2 style="margin:12px 0 10px;font-size:18px">服务器开小差了</h2>
+        <p style="color:var(--text-sub);font-size:14px;margin-bottom:24px"
+           th:text="${message} ?: '请稍后重试，若持续出现请联系管理员。'">提示</p>
+        <div style="display:flex;gap:10px;justify-content:center">
+            <a class="btn btn-outline" href="javascript:location.reload()">重新加载</a>
+            <a class="btn" th:href="@{/}">回到首页</a>
+        </div>
+    </div>
+</div>
+</body>
+</html>

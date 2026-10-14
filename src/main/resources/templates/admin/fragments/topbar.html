@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<!--
+  后台顶栏，对应《概要设计》6.2.3：
+  左侧面包屑，右侧当前登录管理员信息（头像 + 昵称 + 退出）。
+-->
+<div class="admin-topbar" th:fragment="topbar(title)">
+    <button class="sidebar-toggle" type="button" aria-label="切换侧边栏">☰</button>
+
+    <span class="crumb">
+        后台管理 / <strong th:text="${title}">页面</strong>
+    </span>
+
+    <span class="spacer"></span>
+
+    <div class="admin-user">
+        <img class="avatar" th:if="${currentAdmin != null and currentAdmin.avatar != null
+                                   and currentAdmin.avatar != ''}"
+             th:src="${currentAdmin.avatar}" alt="头像">
+        <span class="avatar" th:unless="${currentAdmin != null and currentAdmin.avatar != null
+                                          and currentAdmin.avatar != ''}"
+              th:text="${currentAdmin != null and currentAdmin.username != null}
+                       ? ${#strings.substring(currentAdmin.username, 0, 1)} : 'A'">A</span>
+        <span th:text="${currentAdmin != null} ? ${currentAdmin.displayName} : '未登录'">管理员</span>
+        <a class="btn btn-outline btn-sm" th:href="@{/admin/logout}">退出</a>
+    </div>
+</div>
+</html>

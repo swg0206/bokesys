@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<!--
+  后台仪表盘，对应《概要设计》6.2.3 与接口 API-11（Fun_08）。
+  自上而下：四张统计卡片 → 待审核评论提醒条 → 文章发布趋势图 → 最近发布文章列表。
+
+  趋势图用纯 CSS 柱状条绘制（高度按当日发布量占最大值的比例换算），
+  不引入任何图表库 —— 既少一个 CDN 依赖，也不必担心离线时图表空白。
+-->
+<head th:replace="~{admin/fragments/head :: head('仪表盘')}">
+    <title>仪表盘</title>
+</head>
+<body>
+
+<div class="admin-layout">
+    <div th:replace="~{admin/fragments/sidebar :: sidebar(${activeMenu})}"></div>
+
+    <div class="admin-main">
+        <div th:replace="~{admin/fragments/topbar :: topbar('仪表盘')}"></div>
+
+        <div class="admin-content">
+
+            <!-- 四张统计卡片：点击分别跳转到对应的管理列表 -->
+            <div class="stat-grid">
+                <a class="stat-card accent-blue" th:href="@{/admin/articles}">
+                    <div class="label">文章总数</div>
+                    <div class="value" th:text="${stats.articleTotal}">0</div>
+                    <div class="hint">
+                        已发布 <span th:text="${stats.publishedTotal}">0</span>
+                        · 草稿 <span th:text="${stats.draftTotal}">0</span>
+                    </div>
+                </a>
+
+                <a class="stat-card accent-green"
+                   th:href="@{/admin/comments(status=0)}">
+                    <div class="label">评论总数</div>
+                    <div class="value" th:text="${stats.commentTotal}">0</div>
+                    <div class="hint">
+                        待审核 <span th:text="${stats.pendingCommentTotal}">0</span>
+                    </div>
+                </a>
+
+                <a class="stat-card accent-amber" th:href="@{/admin/categories}">
+                    <div class="label">分类数</div>
+                    <div class="value" th:text="${stats.categoryTotal}">0</div>
+                    <div class="hint">用于组织文章</div>
+                </a>
+
+                <a class="stat-card accent-slate" th:href="@{/admin/tags}">
+                    <div class="label">标签数</div>
+                    <div class="value" th:text="${stats.tagTotal}">0</div>
+                    <div class="hint">
+                        累计浏览 <span th:text="${stats.viewTotal}">0</span>
+                    </div>
+                </a>
+            </div>
+
+            <!-- 待审核评论提醒条 -->
+            <div class="pending-bar" th:if="${stats.hasPending}">
+                <span>有 <span class="count-badge" th:text="${stats.pendingCommentTotal}">0</span>
+                      条评论等待审核</span>
+                <span>审核通过后才会在前台展示</span>
+                <span class="spacer"></span>
+                <a class="btn btn-warning btn-sm" th:href="@{/admin/comments(status=0)}">
+                    立即审核
+                </a>
+            </div>
+
+            <div class="two-col">
+                <!-- 文章发布趋势：近 7 天 -->
+                <div class="card">
+                    <div class="card-head">
+                        <h2>文章发布趋势</h2>
+                        <span class="spacer"></span>
+                        <span style="color:var(--text-sub);font-size:12.5px">近 7 天</span>
+                    </div>
+
+                    <div class="trend" th:if="${stats.trend != null and !#lists.isEmpty(stats.trend)}">
+                        <div class="col" th:each="p : ${stats.trend}">
+                            <span class="num" th:text="${p.articleCount}">0</span>
+                            <!-- 高度按当日占最大值的比例换算，最小 4px 保证零值也能看见基线 -->
+                            <div class="bar"
+                                 th:style="'height:' + ${p.articleCount * 100 / stats.trendMax} + '%'"></div>
+                            <span class="day"
+                                  th:text="${#strings.substring(p.statDate, 5)}">10-13</span>
+                        </div>
+                    </div>
+
+                    <div class="empty-state" th:if="${stats.trend == null or #lists.isEmpty(stats.trend)}">
+                        暂无数据
+                    </div>
+                </div>
+
+                <!-- 各分类文章分布 -->
+                <div class="card">
+                    <h2>各分类文章分布</h2>
+                    <ul style="list-style:none;margin:0;padding:0">
+                        <li th:each="c : ${stats.categoryStats}"
+                            style="display:flex;justify-content:space-between;gap:10px;
+                                   padding:7px 0;border-bottom:1px dashed var(--border);
+                                   font-size:14px">
+                            <span th:text="${c.name}">分类</span>
+                            <span style="color:var(--text-sub)"
+                                  th:text="${c.articleCount} + ' 篇'">0 篇</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 最近发布的文章 -->
+            <div class="card">
+                <div class="card-head">
+                    <h2>最近发布</h2>
+                    <span class="spacer"></span>
+                    <a class="btn btn-outline btn-sm" th:href="@{/admin/articles}">查看全部</a>
+                </div>
+
+                <div class="table-wrap" th:if="${stats.recentArticles != null
+                                              and !#lists.isEmpty(stats.recentArticles)}">
+                    <table class="data-table">
+                        <thead>
+                        <tr>
+                            <th>标题</th>
+                            <th>状态</th>
+                            <th>浏览量</th>
+                            <th>评论数</th>
+                            <th>发布时间</th>
+                            <th>操作</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="a : ${stats.recentArticles}">
+                            <td class="title-cell">
+                                <a th:href="@{/article/{id}(id=${a.id})}" target="_blank"
+                                   th:text="${a.title}">标题</a>
+                            </td>
+                            <td>
+                                <span class="badge-status badge-published"
+                                      th:if="${a.status == 1}">已发布</span>
+                                <span class="badge-status badge-draft"
+                                      th:unless="${a.status == 1}">草稿</span>
+                            </td>
+                            <td th:text="${a.viewCount}">0</td>
+                            <td th:text="${a.commentCount}">0</td>
+                            <td style="color:var(--text-sub);font-size:13px"
+                                th:text="${#temporals.format(a.createTime, 'yyyy-MM-dd HH:mm')}">时间</td>
+                            <td class="actions">
+                                <a class="btn btn-outline btn-sm"
+                                   th:href="@{/admin/articles/{id}/edit(id=${a.id})}">编辑</a>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="empty-state" th:if="${stats.recentArticles == null
+                                                 or #lists.isEmpty(stats.recentArticles)}">
+                    还没有文章
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script th:src="@{/js/admin.js}"></script>
+</body>
+</html>

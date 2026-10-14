@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.swust.bokesys.mapper.ArticleTagMapper">
+
+    <!-- 批量插入：一篇文章可能同时挂多个标签，用 foreach 一次提交 -->
+    <insert id="batchInsert">
+        INSERT INTO t_article_tag (article_id, tag_id) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.articleId}, #{item.tagId})
+        </foreach>
+    </insert>
+
+    <delete id="deleteByArticleId">
+        DELETE FROM t_article_tag WHERE article_id = #{articleId}
+    </delete>
+
+    <delete id="deleteByTagId">
+        DELETE FROM t_article_tag WHERE tag_id = #{tagId}
+    </delete>
+
+    <select id="selectTagIdsByArticleId" resultType="long">
+        SELECT tag_id FROM t_article_tag WHERE article_id = #{articleId}
+    </select>
+
+    <select id="countByTagId" resultType="long">
+        SELECT COUNT(*) FROM t_article_tag WHERE tag_id = #{tagId}
+    </select>
+
+</mapper>

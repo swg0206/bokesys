@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.swust.bokesys.mapper.CategoryMapper">
+
+    <!--
+      分类下的文章数量用 LEFT JOIN 派生，而不是在 t_category 上加冗余计数列 ——
+      因为《概要设计》5.2.4 的字段清单里并没有计数字段，加列会让脚本与文档不一致，
+      且冗余计数需要每处增删改都同步维护，容易漂移。
+    -->
+    <select id="selectAllWithCount" resultType="cn.swust.bokesys.po.Category">
+        SELECT c.id, c.name, c.description, c.sort_order, c.create_time, c.update_time,
+               COUNT(a.id) AS articleCount
+        FROM t_category c
+        LEFT JOIN t_article a ON a.category_id = c.id
+        GROUP BY c.id, c.name, c.description, c.sort_order, c.create_time, c.update_time
+        ORDER BY c.sort_order, c.id
+    </select>
+
+    <!-- 前台侧栏导航用：只统计已发布文章，避免把草稿数暴露给访客 -->
+    <select id="selectPublishedWithCount" resultType="cn.swust.bokesys.po.Category">
+        SELECT c.id, c.name, c.description, c.sort_order, c.create_time, c.update_time,
+               COUNT(a.id) AS articleCount
+        FROM t_category c
+        LEFT JOIN t_article a ON a.category_id = c.id AND a.status = 1
+        GROUP BY c.id, c.name, c.description, c.sort_order, c.create_time, c.update_time
+        ORDER BY c.sort_order, c.id
+    </select>
+
+    <select id="selectById" resultType="cn.swust.bokesys.po.Category">
+        SELECT id, name, description, sort_order, create_time, update_time
+        FROM t_category WHERE id = #{id}
+    </select>
+
+    <select id="selectByName" resultType="cn.swust.bokesys.po.Category">
+        SELECT id, name, description, sort_order, create_time, update_time
+        FROM t_category WHERE name = #{name}
+    </select>
+
+    <insert id="insert" parameterType="cn.swust.bokesys.po.Category"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO t_category (name, description, sort_order, create_time, update_time)
+        VALUES (#{name}, #{description}, #{sortOrder}, #{createTime}, #{updateTime})
+    </insert>
+
+    <update id="update" parameterType="cn.swust.bokesys.po.Category">
+        UPDATE t_category
+        <set>
+            <if test="name != null">name = #{name},</if>
+            <if test="description != null">description = #{description},</if>
+            <if test="sortOrder != null">sort_order = #{sortOrder},</if>
+            update_time = #{updateTime}
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM t_category WHERE id = #{id}
+    </delete>
+
+    <select id="countArticleByCategoryId" resultType="long">
+        SELECT COUNT(*) FROM t_article WHERE category_id = #{categoryId}
+    </select>
+
+    <select id="countAll" resultType="long">
+        SELECT COUNT(*) FROM t_category
+    </select>
+
+</mapper>

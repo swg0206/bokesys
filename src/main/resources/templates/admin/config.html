@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<!--
+  系统管理，对应接口 API-21（Fun_14）。
+  站点名称、站点描述、备案信息等参数持久化在 t_config 表，保存后立即生效、无需重启。
+
+  表单只提交下方列出的固定几项 —— 服务端也只接收这几个键，
+  避免任何客户端都能凭空写入任意配置项。
+-->
+<head th:replace="~{admin/fragments/head :: head('系统管理')}">
+    <title>系统管理</title>
+</head>
+<body>
+
+<div class="admin-layout">
+    <div th:replace="~{admin/fragments/sidebar :: sidebar(${activeMenu})}"></div>
+
+    <div class="admin-main">
+        <div th:replace="~{admin/fragments/topbar :: topbar('系统管理')}"></div>
+
+        <div class="admin-content">
+
+            <div class="page-head">
+                <h1>系统管理</h1>
+                <span class="spacer"></span>
+                <a class="btn btn-outline" th:href="@{/}" target="_blank">去前台查看效果</a>
+            </div>
+
+            <div class="two-col">
+                <div class="card">
+                    <h2>站点参数</h2>
+                    <form id="configForm" method="post" th:action="@{/admin/config}"
+                          data-ajax="put" data-reload="false">
+                        <div class="form-group">
+                            <label for="siteName">站点名称</label>
+                            <input type="text" id="siteName" name="siteName" maxlength="50"
+                                   th:value="${site['site_name']}"
+                                   placeholder="显示在导航栏与页面标题">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="siteDescription">站点描述</label>
+                            <input type="text" id="siteDescription" name="siteDescription"
+                                   maxlength="200" th:value="${site['site_description']}"
+                                   placeholder="显示在侧边栏「关于站点」">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="siteKeywords">站点关键词</label>
+                            <input type="text" id="siteKeywords" name="siteKeywords" maxlength="200"
+                                   th:value="${site['site_keywords']}"
+                                   placeholder="多个关键词用英文逗号分隔，用于 SEO">
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="icpNo">备案信息</label>
+                                <input type="text" id="icpNo" name="icpNo" maxlength="100"
+                                       th:value="${site['icp_no']}"
+                                       placeholder="显示在页脚">
+                            </div>
+                            <div class="form-group">
+                                <label for="authorName">博主署名</label>
+                                <input type="text" id="authorName" name="authorName" maxlength="50"
+                                       th:value="${site['author_name']}"
+                                       placeholder="显示在页脚版权行">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="pageSize">前台每页文章数</label>
+                            <input type="number" id="pageSize" name="pageSize" min="1" max="50"
+                                   th:value="${site['page_size']}">
+                            <div class="help">取值 1~50，超出范围会被自动收敛</div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn">保存配置</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- 当前落库的全部配置项，便于核对 -->
+                <div class="card">
+                    <h2>配置项明细（t_config）</h2>
+                    <div class="table-wrap" style="box-shadow:none;border:none">
+                        <table class="data-table">
+                            <thead>
+                            <tr>
+                                <th>键名</th>
+                                <th>当前值</th>
+                                <th style="width:130px">更新时间</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="c : ${configs}">
+                                <td><code th:text="${c.configKey}">key</code></td>
+                                <td class="text-sub" th:text="${c.configValue}">值</td>
+                                <td class="text-sub"
+                                    th:text="${c.updateTime != null}
+                                             ? ${#temporals.format(c.updateTime, 'yyyy-MM-dd HH:mm')}
+                                             : '—'">—</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script th:src="@{/js/admin.js}"></script>
+</body>
+</html>

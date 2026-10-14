@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.swust.bokesys.mapper.CommentMapper">
+
+    <!--
+      前台：只取已通过审核的评论（status = 1）。
+      这是「先审核后展示」的落点 —— 待审核评论在数据库里有，但这条 SQL 查不出来。
+    -->
+    <select id="selectApprovedByArticleId" resultType="cn.swust.bokesys.po.Comment">
+        SELECT id, article_id, parent_id, user_id, nickname, email, content, status, create_time
+        FROM t_comment
+        WHERE article_id = #{articleId} AND status = 1
+        ORDER BY create_time ASC, id ASC
+    </select>
+
+    <!-- 后台分页：连带文章标题一起取出，便于列表里定位评论所属文章 -->
+    <select id="selectAdminPage" resultType="cn.swust.bokesys.vo.CommentVO">
+        SELECT cm.id, cm.article_id, cm.parent_id, cm.user_id, cm.nickname, cm.email,
+               cm.content, cm.status, cm.create_time,
+               a.title AS articleTitle
+        FROM t_comment cm
+        JOIN t_article a ON a.id = cm.article_id
+        <where>
+            <if test="status != null">
+                AND cm.status = #{status}
+            </if>
+            <if test="articleId != null">
+                AND cm.article_id = #{articleId}
+            </if>
+            <if test="keyword != null and keyword != ''">
+                AND (cm.content LIKE CONCAT('%', #{keyword}, '%')
+                OR cm.nickname LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+        </where>
+        ORDER BY cm.create_time DESC, cm.id DESC
+    </select>
+
+    <select id="selectById" resultType="cn.swust.bokesys.po.Comment">
+        SELECT id, article_id, parent_id, user_id, nickname, email, content, status, create_time
+        FROM t_comment WHERE id = #{id}
+    </select>
+
+    <select id="selectByParentId" resultType="cn.swust.bokesys.po.Comment">
+        SELECT id, article_id, parent_id, user_id, nickname, email, content, status, create_time
+        FROM t_comment WHERE parent_id = #{parentId}
+        ORDER BY create_time ASC, id ASC
+    </select>
+
+    <insert id="insert" parameterType="cn.swust.bokesys.po.Comment"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO t_comment
+            (article_id, parent_id, user_id, nickname, email, content, status, create_time)
+        VALUES
+            (#{articleId}, #{parentId}, #{userId}, #{nickname}, #{email}, #{content},
+             #{status}, #{createTime})
+    </insert>
+
+    <insert id="insertBatch">
+        INSERT INTO t_comment
+            (article_id, parent_id, user_id, nickname, email, content, status, create_time)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.articleId}, #{item.parentId}, #{item.userId}, #{item.nickname},
+             #{item.email}, #{item.content}, #{item.status}, #{item.createTime})
+        </foreach>
+    </insert>
+
+    <update id="updateStatus">
+        UPDATE t_comment SET status = #{status} WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM t_comment WHERE id = #{id}
+    </delete>
+
+    <delete id="deleteBatch">
+        DELETE FROM t_comment WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <delete id="deleteByParentId">
+        DELETE FROM t_comment WHERE parent_id = #{parentId}
+    </delete>
+
+    <delete id="deleteByArticleId">
+        DELETE FROM t_comment WHERE article_id = #{articleId}
+    </delete>
+
+    <!-- 先解开自关联的父子指针，避免一条 DELETE 删父评论时撞上子评论的外键 -->
+    <update id="clearParentIdByArticleId">
+        UPDATE t_comment SET parent_id = NULL WHERE article_id = #{articleId}
+    </update>
+
+    <select id="countAll" resultType="long">
+        SELECT COUNT(*) FROM t_comment
+    </select>
+
+    <select id="countByStatus" resultType="long">
+        SELECT COUNT(*) FROM t_comment WHERE status = #{status}
+    </select>
+
+    <select id="countByArticleId" resultType="long">
+        SELECT COUNT(*) FROM t_comment WHERE article_id = #{articleId}
+    </select>
+
+</mapper>

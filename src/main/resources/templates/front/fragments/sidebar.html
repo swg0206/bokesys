@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<!--
+  前台右侧功能侧边栏，对应《概要设计》6.1.1：
+  自上而下依次为「关于站点」「文章分类」「热门标签」「友情链接」四个区块。
+  分类与标签支持点击筛选（Fun_03 / Fun_04），友情链接对应 Fun_06。
+-->
+<aside class="sidebar" th:fragment="sidebar">
+
+    <!-- 关于站点：描述取自 t_config，对应 Fun_14 -->
+    <div class="sidebar-block">
+        <h3>关于站点</h3>
+        <p th:text="${site != null ? (site['site_description'] ?: '暂无站点描述') : '暂无站点描述'}">
+            记录技术成长与代码之外的生活
+        </p>
+    </div>
+
+    <!-- 文章分类导航（只统计已发布文章） -->
+    <div class="sidebar-block">
+        <h3>文章分类</h3>
+        <ul class="sidebar-list" th:if="${sidebarCategories != null and !#lists.isEmpty(sidebarCategories)}">
+            <li th:each="cat : ${sidebarCategories}">
+                <a th:href="@{/category/{id}(id=${cat.id})}" th:text="${cat.name}">分类名</a>
+                <span class="count" th:text="${cat.articleCount} + ' 篇'">0 篇</span>
+            </li>
+        </ul>
+        <p th:if="${sidebarCategories == null or #lists.isEmpty(sidebarCategories)}">暂无分类</p>
+    </div>
+
+    <!-- 热门标签云（按被引用文章数倒序取前 N） -->
+    <div class="sidebar-block">
+        <h3>热门标签</h3>
+        <div class="cloud" th:if="${sidebarTags != null and !#lists.isEmpty(sidebarTags)}">
+            <a class="tag"
+               th:each="t : ${sidebarTags}"
+               th:href="@{/tag/{id}(id=${t.id})}"
+               th:text="${t.name} + ' (' + ${t.articleCount} + ')'">标签</a>
+        </div>
+        <p th:if="${sidebarTags == null or #lists.isEmpty(sidebarTags)}">暂无标签</p>
+    </div>
+
+    <!-- 友情链接（只展示 status=1 的） -->
+    <div class="sidebar-block">
+        <h3>友情链接</h3>
+        <ul class="sidebar-list" th:if="${sidebarLinks != null and !#lists.isEmpty(sidebarLinks)}">
+            <li th:each="link : ${sidebarLinks}">
+                <a th:href="${link.url}" target="_blank" rel="noopener noreferrer"
+                   th:text="${link.name}">链接名称</a>
+            </li>
+        </ul>
+        <p th:if="${sidebarLinks == null or #lists.isEmpty(sidebarLinks)}">暂无友情链接</p>
+    </div>
+
+</aside>
+</html>

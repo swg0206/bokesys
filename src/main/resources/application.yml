@@ -1,0 +1,104 @@
+server:
+  port: 8080
+  servlet:
+    encoding:
+      charset: UTF-8
+      force: true
+    session:
+      timeout: 30m
+      cookie:
+        http-only: true
+
+spring:
+  application:
+    name: bokesys
+
+  # ── 数据源：H2 内存库，跑在 MySQL 兼容模式下 ──────────────────────────
+  # 连接串里四个参数都不能少：
+  #   MODE=MySQL                     让按 MySQL 惯例写的 DDL/DML 能直接跑
+  #   DATABASE_TO_LOWER=TRUE         标识符落成小写，与 MySQL 行为对齐
+  #   CASE_INSENSITIVE_IDENTIFIERS   列名匹配不区分大小写
+  #   DB_CLOSE_DELAY=-1              内存库活到 JVM 结束。不加会「建表成功但查不到表」
+  #                                  （Hikari 多连接，最后一条连接关闭即销毁库）
+  datasource:
+    url: jdbc:h2:mem:bokesys;MODE=MySQL;DATABASE_TO_LOWER=TRUE;CASE_INSENSITIVE_IDENTIFIERS=TRUE;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ''
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 30000
+
+  # ── 启动建表与灌数 ────────────────────────────────────────────────────
+  # db/ 不是 Boot 的默认扫描位置（默认只扫 classpath 根下的 schema.sql），必须显式指定。
+  # encoding 必须为 UTF-8，否则 data.sql 里的中文会读成乱码。
+  sql:
+    init:
+      mode: always
+      encoding: UTF-8
+      schema-locations: classpath:db/h2/schema.sql
+      data-locations: classpath:db/h2/data.sql
+      continue-on-error: false
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+      settings:
+        web-allow-others: false
+
+  thymeleaf:
+    cache: false
+    encoding: UTF-8
+
+  mvc:
+    # 后台的编辑/删除用 HTML 表单提交 PUT/DELETE，靠隐藏域 _method 伪装。
+    # 该过滤器默认关闭，不打开则一律 405。
+    hiddenmethod:
+      filter:
+        enabled: true
+    format:
+      date: yyyy-MM-dd
+      date-time: yyyy-MM-dd HH:mm:ss
+
+  jackson:
+    time-zone: GMT+8
+    date-format: yyyy-MM-dd HH:mm:ss
+
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 10MB
+
+  web:
+    resources:
+      static-locations: classpath:/static/
+
+# ── 数据持久层 ──────────────────────────────────────────────────────────
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: cn.swust.bokesys.po
+  configuration:
+    # create_time -> createTime，省掉大量 resultMap 手工映射
+    map-underscore-to-camel-case: true
+    jdbc-type-for-null: 'NULL'
+    default-statement-timeout: 30
+
+# ── 分页插件 ────────────────────────────────────────────────────────────
+# 显式指定 h2 方言：连接串里含 MODE=MySQL 会干扰自动探测。
+# （pagehelper 6.x 没有 H2Dialect 类，别名表里 h2 复用 HsqldbDialect，生成 LIMIT/OFFSET 语法）
+pagehelper:
+  helper-dialect: h2
+  reasonable: true
+  support-methods-arguments: true
+  params: count=countSql
+
+# ── 站点自定义配置 ──────────────────────────────────────────────────────
+file:
+  upload-dir: ./uploads
+
+logging:
+  level:
+    cn.swust.bokesys.mapper: debug
+    org.springframework.jdbc.datasource.init: debug

@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<!--
+  评论管理，对应接口 API-18（Fun_11）。
+  核心是「审核通过」：通过后评论才会出现在前台，并同步把文章的评论数 +1。
+  顶部提醒条与状态筛选配合，管理员进入即可看到待处理的评论量。
+-->
+<head th:replace="~{admin/fragments/head :: head('评论管理')}">
+    <title>评论管理</title>
+</head>
+<body>
+
+<div class="admin-layout">
+    <div th:replace="~{admin/fragments/sidebar :: sidebar(${activeMenu})}"></div>
+
+    <div class="admin-main">
+        <div th:replace="~{admin/fragments/topbar :: topbar('评论管理')}"></div>
+
+        <div class="admin-content">
+
+            <div class="page-head">
+                <h1>评论管理</h1>
+                <span class="spacer"></span>
+                <button type="button" class="btn btn-outline" disabled
+                        data-batch-approve="/admin/comments/batch-approve"
+                        data-label="批量通过">批量通过</button>
+            </div>
+
+            <div class="pending-bar" th:if="${pendingTotal != null and pendingTotal > 0}">
+                <span>当前有 <span class="count-badge" th:text="${pendingTotal}">0</span>
+                      条评论待审核</span>
+                <span class="spacer"></span>
+                <a class="btn btn-warning btn-sm" th:href="@{/admin/comments(status=0)}">
+                    只看待审核
+                </a>
+            </div>
+
+            <!-- 筛选 -->
+            <form class="filter-bar" method="get" th:action="@{/admin/comments}"
+                  data-filter-form>
+                <input type="hidden" name="pageNo" value="1">
+
+                <div class="field">
+                    <label for="f-status">状态</label>
+                    <select id="f-status" name="status" data-auto-submit>
+                        <option value="">全部状态</option>
+                        <option th:each="s : ${statusOptions}"
+                                th:value="${s.code}"
+                                th:text="${s.label}"
+                                th:selected="${status != null and status == s.code}">待审核</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label for="f-keyword">关键词</label>
+                    <input type="text" id="f-keyword" name="keyword" th:value="${keyword}"
+                           placeholder="按内容或昵称匹配">
+                </div>
+
+                <div class="field">
+                    <label>&nbsp;</label>
+                    <div style="display:flex;gap:8px">
+                        <button class="btn" type="submit">查询</button>
+                        <a class="btn btn-outline" th:href="@{/admin/comments}">重置</a>
+                    </div>
+                </div>
+            </form>
+
+            <div class="table-wrap" th:if="${page != null and !page.empty}">
+                <table class="data-table">
+                    <thead>
+                    <tr>
+                        <th style="width:38px">
+                            <input type="checkbox" data-batch-check-all aria-label="全选">
+                        </th>
+                        <th style="width:56px">ID</th>
+                        <th>评论内容</th>
+                        <th style="width:190px">所属文章</th>
+                        <th style="width:96px">评论人</th>
+                        <th style="width:150px">提交时间</th>
+                        <th style="width:88px">状态</th>
+                        <th style="width:170px">操作</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="c : ${page.list}">
+                        <td>
+                            <input type="checkbox" data-batch-check th:value="${c.id}"
+                                   aria-label="选择此行">
+                        </td>
+                        <td class="text-sub" th:text="${c.id}">1</td>
+                        <td style="max-width:380px">
+                            <span class="text-sub" th:if="${c.parentId != null}"
+                                  th:text="'↳ 回复 #' + ${c.parentId}">↳</span>
+                            <span th:text="${c.content}">评论内容</span>
+                        </td>
+                        <td>
+                            <a th:href="@{/article/{id}(id=${c.articleId})}" target="_blank"
+                               th:text="${c.articleTitle}">文章标题</a>
+                        </td>
+                        <td th:text="${c.nickname}">昵称</td>
+                        <td class="text-sub"
+                            th:text="${#temporals.format(c.createTime, 'yyyy-MM-dd HH:mm')}">时间</td>
+                        <td>
+                            <span class="badge-status badge-pending"
+                                  th:if="${c.status == 0}">待审核</span>
+                            <span class="badge-status badge-published"
+                                  th:if="${c.status == 1}">已通过</span>
+                            <span class="badge-status badge-rejected"
+                                  th:if="${c.status == 2}">已拒绝</span>
+                        </td>
+                        <td class="actions">
+                            <!-- 只有还没通过的评论才需要「通过」按钮 -->
+                            <button type="button" class="btn btn-success btn-sm"
+                                    th:if="${c.status != 1}"
+                                    data-row-action
+                                    th:attr="data-url=@{/admin/comments/{id}/approve(id=${c.id})}"
+                                    data-method="PUT">通过</button>
+
+                            <button type="button" class="btn btn-warning btn-sm"
+                                    th:if="${c.status != 2}"
+                                    data-row-action
+                                    th:attr="data-url=@{/admin/comments/{id}/reject(id=${c.id})}"
+                                    data-method="PUT">拒绝</button>
+
+                            <button type="button" class="btn btn-danger btn-sm"
+                                    data-row-action
+                                    th:attr="data-url=@{/admin/comments/{id}(id=${c.id})}"
+                                    data-method="DELETE"
+                                    data-confirm-title="删除评论"
+                                    data-confirm="删除该评论会连同它的所有回复一起删除，确定吗？">
+                                删除
+                            </button>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="empty-state" th:if="${page == null or page.empty}">
+                没有符合条件的评论
+            </div>
+
+            <div th:replace="~{admin/fragments/pagination :: pagination(${page}, ${pageBase})}"></div>
+
+        </div>
+    </div>
+</div>
+
+<script th:src="@{/js/admin.js}"></script>
+<script>
+    /* 评论页的批量对象是「通过」而不是「删除」，因此单独接一套勾选逻辑，
+       复用 admin.js 暴露的 window.adminSubmitForm 之外的最小实现。 */
+    (function () {
+        var all = document.querySelector('[data-batch-check-all]');
+        var btn = document.querySelector('[data-batch-approve]');
+        if (!btn) {
+            return;
+        }
+
+        function checks() {
+            return Array.prototype.slice.call(document.querySelectorAll('[data-batch-check]'));
+        }
+
+        function ids() {
+            return checks().filter(function (c) {
+                return c.checked;
+            }).map(function (c) {
+                return Number(c.value);
+            });
+        }
+
+        function sync() {
+            var n = ids().length;
+            btn.disabled = n === 0;
+            btn.textContent = n > 0 ? '批量通过（' + n + '）' : '批量通过';
+        }
+
+        if (all) {
+            all.addEventListener('change', function () {
+                checks().forEach(function (c) {
+                    c.checked = all.checked;
+                });
+                sync();
+            });
+        }
+        checks().forEach(function (c) {
+            c.addEventListener('change', sync);
+        });
+
+        btn.addEventListener('click', function () {
+            var list = ids();
+            if (list.length === 0) {
+                return;
+            }
+            fetch(btn.dataset.batchApprove, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json;charset=UTF-8',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify(list)
+            }).then(function (r) {
+                return r.json();
+            }).then(function (data) {
+                if (data.code === 200) {
+                    window.adminToast(data.message || '操作成功', true);
+                    setTimeout(function () {
+                        window.location.reload();
+                    }, 700);
+                } else {
+                    window.adminToast(data.message || '操作失败', false);
+                }
+            }).catch(function () {
+                window.adminToast('网络异常，请稍后重试', false);
+            });
+        });
+
+        sync();
+    })();
+</script>
+</body>
+</html>
